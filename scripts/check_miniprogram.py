@@ -8,6 +8,11 @@
   4. WXML 里绑定的每个事件处理函数，在同页 .js 中确有定义
   5. 每个 require 的相对路径都存在
   6. lazyCodeLoading 必须是 requiredComponents（否则 iPhone 上可能白屏）
+  7. npm 依赖是否真的装上了、构建产物是否到位
+
+第 7 项是被真实事故逼出来的：只往 package.json 里写依赖、不执行 npm install，
+发布时会报「小程序依赖构建失败，请检查依赖是否支持微信小程序后重试」。
+微信的「构建 npm」是读 node_modules 再产出 miniprogram_npm，没装就无从构建。
 
 用法：
     python scripts/check_miniprogram.py
@@ -22,6 +27,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent / "miniprogram"
 
+# 这两目录是 npm 依赖与构建产物，不是项目源码，扫描时必须排除
+SKIP_DIRS = {"node_modules", "miniprogram_npm"}
+
 # node 只用来做语法解析，找不到就跳过这一项（不阻断其他检查）
 NODE = shutil.which("node") or shutil.which("node.exe")
 
@@ -33,9 +41,18 @@ def rel(path: Path) -> str:
     return str(path.relative_to(ROOT))
 
 
-js_files = sorted(ROOT.rglob("*.js"))
-json_files = sorted(ROOT.rglob("*.json"))
-wxml_files = sorted(ROOT.rglob("*.wxml"))
+def walk(suffix: str) -> list[Path]:
+    """收集项目源码文件，跳过依赖与构建产物目录。"""
+    return sorted(
+        p
+        for p in ROOT.rglob(f"*{suffix}")
+        if not SKIP_DIRS & {part for part in p.relative_to(ROOT).parts}
+    )
+
+
+js_files = walk(".js")
+json_files = walk(".json")
+wxml_files = walk(".wxml")
 
 # ---- 1. JS 语法 ----
 if NODE:
@@ -105,6 +122,67 @@ for path in js_files:
         base = (path.parent / target).resolve()
         if not (base.exists() or base.with_suffix(".js").exists()):
             errors.append(f"[require 缺失] {rel(path)} -> {target}")
+
+# ---- 6. npm 依赖是否真的装上并构建 ----
+npm_targets = sorted(
+    {
+        target
+        for path in js_files
+        for target in REQUIRE_RE.findall(path.read_text(encoding="utf-8"))
+        if not target.startswith(".")
+    }
+)
+
+if npm_targets:
+    declared = set(
+        json.loads((ROOT / "package.json").read_text(encoding="utf-8")).get(
+            "dependencies", {}
+        )
+    )
+    npm_errors_before = len(errors)
+
+    if not (ROOT / "node_modules").is_dir():
+        errors.append(
+            "[依赖未安装] package.json 声明了依赖，但 node_modules 不存在。"
+            "只写 package.json 不会安装依赖，发布时会报「小程序依赖构建失败」。"
+            "请先在 miniprogram 目录执行 npm install"
+        )
+
+    for target in npm_targets:
+        parts = target.split("/")
+        pkg = "/".join(parts[:2]) if target.startswith("@") else parts[0]
+        sub = target[len(pkg):].lstrip("/")
+
+        if pkg not in declared:
+            errors.append(
+                f"[依赖未声明] require('{target}') 用到 {pkg}，但它不在 package.json 的 dependencies 里"
+            )
+            continue
+
+        pkg_dir = ROOT / "node_modules" / pkg
+        if not (pkg_dir / "package.json").exists():
+            errors.append(f"[依赖未安装] {pkg} 不在 node_modules，请执行 npm install")
+            continue
+
+        mp_entry = json.loads(
+            (pkg_dir / "package.json").read_text(encoding="utf-8")
+        ).get("miniprogram")
+
+        if not mp_entry:
+            notes.append(f"npm 依赖 {pkg}: 无 miniprogram 字段，交给构建流程处理")
+            continue
+
+        if sub:
+            built = ROOT / "miniprogram_npm" / pkg / f"{sub}.js"
+            if not built.exists():
+                errors.append(
+                    f"[构建产物缺失] 缺少 {rel(built)} —— 请在开发者工具执行「工具 → 构建 npm」"
+                )
+        else:
+            notes.append(f"npm 依赖 {pkg}: 包根入口，跳过产物路径核对")
+
+    if len(errors) == npm_errors_before:
+        notes.append(f"npm 依赖: {len(npm_targets)} 处 require 已核对安装与构建产物")
 
 # ---- 输出 ----
 print("检查项：")

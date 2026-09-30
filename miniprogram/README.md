@@ -81,9 +81,33 @@ miniprogram/
 
 ## 开发提示
 
-- 依赖通过 `package.json` 声明，在开发者工具里执行一次「工具 → 构建 npm」生成 `miniprogram_npm`。
+- **依赖必须真正安装，不能只写 `package.json`**。两步缺一不可：
+
+  ```bash
+  npm install          # 生成 node_modules 与 package-lock.json
+  ```
+
+  然后是「工具 → 构建 npm」，产出 `miniprogram_npm/@tencent-ai/workbuddy-cloud-sdk/miniprogram.js`。
+
+  ⚠️ **只写 `package.json` 而不执行 `npm install`，发布时会报「小程序依赖构建失败」**——
+  微信的「构建 npm」是从 `node_modules` 读取依赖再产出 `miniprogram_npm` 的，
+  没有 `node_modules` 就没有东西可构建。SDK 升级后也需要重新构建 npm。
+- SDK 通过 `package.json#miniprogram` 字段提供微信专用的 CommonJS 产物（`miniprogram_dist/miniprogram.js`，自包含、无运行时依赖），
+  所以 `require('@tencent-ai/workbuddy-cloud-sdk/miniprogram')` 是唯一正确的入口写法。
 - 请求失败会在真机 vConsole 里输出 `[WorkBuddy Cloud] request failed`，带 HTTP 状态与错误码；成功请求不打印。
 - 不要在 `utils/config.js` 之外硬编码 endpoint。小程序没有 Origin，靠微信的请求域名白名单鉴权，所有小程序共用同一个网关地址。
+
+## 依赖与构建产物说明
+
+| 路径 | 是否入库 | 说明 |
+| --- | --- | --- |
+| `package.json` | ✅ 入库 | 声明依赖（`@tencent-ai/workbuddy-cloud-sdk` 走 `dev` 频道） |
+| `package-lock.json` | ✅ 入库 | 锁定解析结果，保证任何机器上安装得到同一版本 |
+| `node_modules/` | ❌ 忽略 | `npm install` 生成，本地保留即可 |
+| `miniprogram_npm/` | ❌ 忽略 | 「构建 npm」生成，本地保留即可 |
+
+发布时打包的是**本地目录**（不是 git 内容），所以被 gitignore 的 `node_modules/` 与
+`miniprogram_npm/` 只要在磁盘上存在，发布流程就能用上。
 
 ## 改完怎么验证
 

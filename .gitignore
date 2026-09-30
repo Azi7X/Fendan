@@ -16,6 +16,11 @@ data/
 .coverage
 htmlcov/
 
+# 小程序 npm 依赖与构建产物
+# 二者都由本地安装/构建生成，不入库；package-lock.json 要入库以保证可复现
+node_modules/
+miniprogram_npm/
+
 # 编辑器 / 系统
 .vscode/
 .idea/

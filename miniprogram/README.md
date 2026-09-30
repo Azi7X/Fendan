@@ -9,7 +9,8 @@ miniprogram/
 ├── app.js                  # 启动
 ├── app.wxss                # 全局设计变量与公共样式
 ├── sitemap.json
-├── package.json            # 依赖 @tencent-ai/workbuddy-cloud-sdk@dev（需「构建 npm」）
+├── package.json            # 依赖 @tencent-ai/workbuddy-cloud-sdk（确切版本，需「构建 npm」）
+├── miniprogram_npm/        # 「构建 npm」产物，入库，发布时直接读取
 ├── pages/
 │   ├── login/              # 启动页：微信一键登录 → 创建家庭 / 邀请码加入
 │   ├── today/              # 今日视图：周条 + 完成度 + 打卡
@@ -84,7 +85,7 @@ miniprogram/
 - **依赖必须真正安装，不能只写 `package.json`**。两步缺一不可：
 
   ```bash
-  npm install          # 生成 node_modules 与 package-lock.json
+  npm install          # 生成 node_modules
   ```
 
   然后是「工具 → 构建 npm」，产出 `miniprogram_npm/@tencent-ai/workbuddy-cloud-sdk/miniprogram.js`。
@@ -92,6 +93,12 @@ miniprogram/
   ⚠️ **只写 `package.json` 而不执行 `npm install`，发布时会报「小程序依赖构建失败」**——
   微信的「构建 npm」是从 `node_modules` 读取依赖再产出 `miniprogram_npm` 的，
   没有 `node_modules` 就没有东西可构建。SDK 升级后也需要重新构建 npm。
+- **不要把 `package-lock.json` 提交进来**。发布流程里有一个「源码修复」步骤会读取并解析它，
+  实测会读到损坏内容并抛 `package-lock.json: Unexpected token … is not valid JSON`，让发布直接失败。
+  源文件本身是合法的、磁盘与 git 里都能正常解析，问题出在发布器对它的处理上，删除即可绕过。
+  依赖已在 `package.json` 里写死确切版本，不靠 lock 保证可复现。
+- **依赖版本写确切版本号，不要写 `dev` 这类 dist-tag**。dist-tag 需要被解析成具体版本，
+  正是「源码修复」容易出错的环节；写死 `0.1.2-dev.1b37f73.202609222026` 后它就无事可做。
 - SDK 通过 `package.json#miniprogram` 字段提供微信专用的 CommonJS 产物（`miniprogram_dist/miniprogram.js`，自包含、无运行时依赖），
   所以 `require('@tencent-ai/workbuddy-cloud-sdk/miniprogram')` 是唯一正确的入口写法。
 - 请求失败会在真机 vConsole 里输出 `[WorkBuddy Cloud] request failed`，带 HTTP 状态与错误码；成功请求不打印。
@@ -101,13 +108,14 @@ miniprogram/
 
 | 路径 | 是否入库 | 说明 |
 | --- | --- | --- |
-| `package.json` | ✅ 入库 | 声明依赖（`@tencent-ai/workbuddy-cloud-sdk` 走 `dev` 频道） |
-| `package-lock.json` | ✅ 入库 | 锁定解析结果，保证任何机器上安装得到同一版本 |
+| `package.json` | ✅ 入库 | 声明依赖，版本写**确切版本号** |
+| `package-lock.json` | ❌ **不提交** | 发布器的「源码修复」解析它会失败，删除可绕过 |
 | `node_modules/` | ❌ 忽略 | `npm install` 生成，本地保留即可 |
-| `miniprogram_npm/` | ❌ 忽略 | 「构建 npm」生成，本地保留即可 |
+| `miniprogram_npm/` | ✅ **入库** | 微信要求的分发形态，发布时直接读取，必须留在包里 |
 
-发布时打包的是**本地目录**（不是 git 内容），所以被 gitignore 的 `node_modules/` 与
-`miniprogram_npm/` 只要在磁盘上存在，发布流程就能用上。
+`miniprogram_npm/` 是唯一需要入库的构建产物：发布打包直接读磁盘上这个目录，
+把它交给忽略规则只会让「产物在不在包里」变得不可控。
+`node_modules/` 则可放心忽略（5 MB 级体积，且微信打包本就不含它）。
 
 ## 改完怎么验证
 

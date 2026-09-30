@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import __version__
-from .database import Base, engine
+from .database import Base, engine, ensure_schema
 from .routers import chores, households, stats
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -18,6 +18,7 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    ensure_schema()
     yield
 
 

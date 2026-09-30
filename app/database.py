@@ -6,7 +6,7 @@
 import os
 from pathlib import Path
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -50,3 +50,43 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+# 后加的列，格式：表名 -> [(列名, 建列语句)]
+_ADDED_COLUMNS: dict[str, list[tuple[str, str]]] = {
+    "chores": [
+        (
+            "created_by_id",
+            "ALTER TABLE chores ADD COLUMN created_by_id INTEGER "
+            "REFERENCES members(id) ON DELETE SET NULL",
+        ),
+    ],
+}
+
+_ADDED_INDEXES = [
+    "CREATE INDEX IF NOT EXISTS ix_chores_created_by_id ON chores (created_by_id)",
+]
+
+
+def ensure_schema() -> None:
+    """轻量迁移：给已经存在的库补上后加的列。
+
+    create_all 只建缺失的表，不会改已有表，所以字段升级要自己来。
+    SQLite 的 ALTER TABLE ADD COLUMN 只支持加列（新列带外键时默认值必须是
+    NULL，我们正好如此），对当前阶段够用；真要改约束时再上 Alembic。
+    """
+    inspector = inspect(engine)
+    tables = set(inspector.get_table_names())
+    statements: list[str] = []
+
+    for table, columns in _ADDED_COLUMNS.items():
+        if table not in tables:
+            continue  # 还没建表，交给 create_all
+        existing = {col["name"] for col in inspector.get_columns(table)}
+        statements.extend(sql for name, sql in columns if name not in existing)
+
+    statements.extend(_ADDED_INDEXES)
+
+    with engine.begin() as conn:
+        for sql in statements:
+            conn.execute(text(sql))

@@ -15,6 +15,9 @@ Page({
       { key: 'cycle', label: '周期' },
       { key: 'invisible', label: '隐形' },
     ],
+    // 第二行筛选：我和这件事的关系
+    role: 'all',
+    roleFilters: [],
     groups: [],
     totalCount: 0,
     totalPoints: 0,
@@ -41,14 +44,24 @@ Page({
       const family = await store.ensureFamily(!!force);
       const ctx = views.buildContext(family);
       const today = periods.todayISO();
+      const myId = store.state.memberId;
       const rows = family.chores
-        .map((chore) => views.decorateChore(chore, ctx, today))
+        .map((chore) => views.decorateChore(chore, ctx, today, myId))
         .sort((a, b) => (a.is_active === b.is_active ? a.id - b.id : a.is_active ? -1 : 1));
 
+      const byMe = rows.filter((item) => item.assignedByMe).length;
+      const toMe = rows.filter((item) => item.assignedToMe).length;
+
       this.family = family;
+      this.rows = rows;
       this.setData({
         loading: false,
         error: '',
+        roleFilters: [
+          { key: 'all', label: '看全部' },
+          { key: 'by_me', label: `我派的 ${byMe}` },
+          { key: 'to_me', label: `派给我的 ${toMe}` },
+        ],
         groups: this.buildGroups(rows),
         totalCount: rows.length,
         totalPoints: rows.reduce((sum, item) => sum + (item.points || 0), 0),
@@ -60,11 +73,19 @@ Page({
 
   buildGroups(rows) {
     const filter = this.data.filter;
+    const role = this.data.role;
+
+    const matched = rows.filter((item) => {
+      if (role === 'by_me') return !!item.assignedByMe;
+      if (role === 'to_me') return !!item.assignedToMe;
+      return true;
+    });
+
     const keys = filter === 'all' ? ['daily', 'cycle', 'invisible'] : [filter];
 
     return keys
       .map((key) => {
-        const items = rows.filter((item) => item.category === key);
+        const items = matched.filter((item) => item.category === key);
         return {
           key,
           label: periods.CATEGORY_LABELS[key],
@@ -81,6 +102,12 @@ Page({
     const filter = e.currentTarget.dataset.key;
     if (filter === this.data.filter) return;
     this.setData({ filter }, () => this.load(false));
+  },
+
+  setRole(e) {
+    const role = e.currentTarget.dataset.key;
+    if (role === this.data.role) return;
+    this.setData({ role }, () => this.load(false));
   },
 
   async toggleDone(e) {
@@ -205,7 +232,10 @@ Page({
     });
 
     try {
-      const added = await db.importPresets(store.state.householdId, keys, existing, null);
+      // 第 5 个参数记下是谁导入的 —— 批量建清单也是一种「想到」
+      const added = await db.importPresets(
+        store.state.householdId, keys, existing, null, store.state.memberId
+      );
       this.setData({ showImport: false });
       store.invalidateFamily();
       await this.load(true);

@@ -240,6 +240,39 @@ html, body {
   background: #fff1e8; padding: 3px 8px; border-radius: 8px;
 }
 
+/* ---------------- 派单标记 ---------------- */
+/* 别人派给我的任务：整张卡描一圈蓝边，扫一眼就知道哪些是「落到我头上」的 */
+.task.has-assign {
+  border-color: #7fadf5;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.14);
+}
+/* 「别人派给我的」：需要被看见，用比普通标签更重的颜色 */
+.badge-assigned {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 11px; font-weight: 700; color: #0958d9;
+  background: #e8f1ff; padding: 3px 8px; border-radius: 8px;
+}
+/* 「我提的，由别人做」：说明这件事是你想起来的，不是你在做 */
+.badge-proposer {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 11px; font-weight: 600; color: #7a4bd0;
+  background: #f4eeff; padding: 3px 8px; border-radius: 8px;
+}
+
+/* 今日页顶部：别人给你派了活时的提示条 */
+.callout {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin: 12px 18px 0; padding: 12px 14px;
+  background: #e8f1ff; border-radius: 14px;
+  font-size: 12.5px; line-height: 1.6; color: #1d39c4;
+}
+.callout .ic { font-size: 16px; flex: 0 0 auto; line-height: 1.2; }
+.callout b { font-weight: 700; }
+
+/* 清单页第二行筛选，比分类行更轻 */
+.segmented.slim { margin-top: 8px; background: #f2effb; }
+.segmented.slim button { font-size: 12px; padding: 7px 4px; }
+
 /* ---------------- 分类 Tab ---------------- */
 .segmented {
   display: flex; gap: 4px; background: #ebe7f7; border-radius: 14px; padding: 4px;

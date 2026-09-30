@@ -27,6 +27,7 @@ from ..services import (
     import_presets,
     members_index,
     parse_day,
+    resolve_member,
     validate_chore_payload,
 )
 
@@ -95,11 +96,14 @@ def create_chore(
     household: Household = Depends(get_household),
     db: Session = Depends(get_db),
 ):
+    """新增一件家务。
+
+    提出人可以指派给家里任何一个人 —— 包括自己，也包括别人。
+    这是「一个人想到的事派给别人做」的入口。
+    """
     validate_chore_payload(payload.category, payload.freq, payload.weekday, payload.monthday)
-    if payload.assignee_id is not None:
-        member = db.get(Member, payload.assignee_id)
-        if member is None or member.household_id != household.id:
-            raise HTTPException(status_code=400, detail="指定的负责人不属于这个家庭")
+    proposer_id = resolve_member(db, household.id, payload.created_by_id, "提出人")
+    assignee_id = resolve_member(db, household.id, payload.assignee_id, "负责人")
 
     chore = Chore(
         household_id=household.id,
@@ -110,7 +114,8 @@ def create_chore(
         monthday=payload.monthday if payload.freq == "monthly" else None,
         points=payload.points,
         note=payload.note or "",
-        assignee_id=payload.assignee_id,
+        created_by_id=proposer_id,
+        assignee_id=assignee_id,
     )
     db.add(chore)
     db.commit()
@@ -146,10 +151,21 @@ def update_chore(
         chore.note = payload.note
     if payload.is_active is not None:
         chore.is_active = payload.is_active
+
+    if payload.clear_created_by:
+        chore.created_by_id = None
+    elif payload.created_by_id is not None:
+        chore.created_by_id = resolve_member(
+            db, chore.household_id, payload.created_by_id, "提出人"
+        )
+
     if payload.clear_assignee:
         chore.assignee_id = None
     elif payload.assignee_id is not None:
-        chore.assignee_id = payload.assignee_id
+        # 改派：把任务从一个成员名下转到另一个成员名下
+        chore.assignee_id = resolve_member(
+            db, chore.household_id, payload.assignee_id, "负责人"
+        )
 
     validate_chore_payload(chore.category, chore.freq, chore.weekday, chore.monthday)
     db.commit()
@@ -182,7 +198,8 @@ def import_chore_presets(
     if unknown:
         raise HTTPException(status_code=400, detail=f"未知模板：{unknown}")
 
-    added = import_presets(db, household, keys, payload.category)
+    created_by = resolve_member(db, household.id, payload.created_by_id, "提出人")
+    added = import_presets(db, household, keys, payload.category, created_by=created_by)
     return {"added": added, "total_presets": len(CHORE_PRESETS)}
 
 
@@ -202,6 +219,9 @@ def auto_assign(
 @router.get("/households/{code}/today")
 def today_view(
     day: str | None = Query(default=None),
+    member_id: int | None = Query(
+        default=None, description="当前查看者；传了就把他名下的任务排前面"
+    ),
     household: Household = Depends(get_household),
     db: Session = Depends(get_db),
 ):
@@ -213,6 +233,7 @@ def today_view(
         .all()
     )
     members = members_index(db, household.id)
+    viewer = member_id if member_id in members else None
 
     done_map: dict[int, Completion] = {}
     for key in {periods.period_key(c.freq, target) for c in chores}:
@@ -225,8 +246,24 @@ def today_view(
         item = chore_to_out(chore, done_map, members)
         (done if item.done else pending).append(item)
 
-    # 排序：未分配负责人的排前面（提醒要认领），其次按积分从高到低
-    pending.sort(key=lambda c: (c.assignee_id is not None, -c.points, c.id))
+    # 排序：先排「别人派给我的」——这类任务最需要被看见；
+    # 再排没人认领的（提醒要认领）；最后其他任务按积分从高到低。
+    def rank(item) -> tuple[int, int, int]:
+        if viewer and item.assignee_id == viewer and item.created_by_id != viewer:
+            return (0, -item.points, item.id)
+        if item.assignee_id is None:
+            return (1, -item.points, item.id)
+        return (2, -item.points, item.id)
+
+    pending.sort(key=rank)
+
+    def from_others(item) -> bool:
+        return bool(
+            viewer
+            and item.assignee_id == viewer
+            and item.created_by_id is not None
+            and item.created_by_id != viewer
+        )
 
     return {
         "day": target.isoformat(),
@@ -239,6 +276,7 @@ def today_view(
             "points_total": sum(c.points for c in pending + done),
             "points_done": sum(c.points for c in done),
             "unassigned": sum(1 for c in pending + done if c.assignee_id is None),
+            "assigned_to_me": sum(1 for c in pending if from_others(c)),
         },
     }
 

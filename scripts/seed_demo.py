@@ -64,6 +64,19 @@ def build(reset: bool) -> None:
         import_presets(db, household, keys=[], category=None)
 
         chores = db.query(Chore).filter(Chore.household_id == household.id).all()
+
+        # 提出人：谁「想到」这件事。
+        # 这里刻意还原一个常见现实 —— 日常家务多是爸爸提的，
+        # 而周期性家务和隐形家务几乎全是妈妈提的。统计页的「提出数」
+        # 会明显偏向她，这正是那些过去完全看不见的脑力付出。
+        proposer_of = {
+            "daily": members[0],
+            "cycle": members[1],
+            "invisible": members[1],
+        }
+        for chore in chores:
+            chore.created_by_id = proposer_of[chore.category].id
+
         # 按积分负载轮流指派，保持均衡
         load = {m.id: 0 for m in members}
         for chore in chores:
@@ -101,6 +114,13 @@ def build(reset: bool) -> None:
         print(f"  邀请码: {DEMO_CODE}")
         print(f"  成员  : {' / '.join(f'{e} {n}' for n, e, _ in DEMO_MEMBERS)}")
         print(f"  任务  : {len(chores)} 项")
+        for member in members:
+            proposed = [c for c in chores if c.created_by_id == member.id]
+            handed_out = [
+                c for c in proposed if c.assignee_id and c.assignee_id != member.id
+            ]
+            print(f"    {member.emoji} {member.name} 提出 {len(proposed)} 项，"
+                  f"其中派给别人 {len(handed_out)} 项")
         print("\n  启动服务后打开 http://127.0.0.1:8000 ，用邀请码 DEMO01 加入即可")
     finally:
         db.close()

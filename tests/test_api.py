@@ -212,3 +212,162 @@ def test_static_index(client):
     res = client.get("/")
     assert res.status_code == 200
     assert "分担" in res.text
+
+
+# ============================================================ 提出人 / 指派
+def _new_household(client, name, owner, extra_names=()):
+    """建一个干净的家庭，返回 (邀请码, [成员...])，避免和其他用例互相干扰。"""
+    hh = client.post("/api/households", json={"name": name, "owner_name": owner}).json()
+    code = hh["invite_code"]
+    people = list(hh["members"])
+    for extra in extra_names:
+        people.append(
+            client.post(f"/api/households/{code}/members", json={"name": extra}).json()
+        )
+    return code, people
+
+
+def test_propose_task_and_assign_to_another_member(client):
+    """一个人想到的任务，能指派给其他家庭成员完成，并且记下是谁提的。"""
+    code, (dad, mom) = _new_household(client, "派单测试", "爸爸", ["妈妈"])
+
+    res = client.post(
+        f"/api/households/{code}/chores",
+        json={
+            "title": "买洗衣液",
+            "category": "invisible",
+            "freq": "once",
+            "points": 2,
+            "created_by_id": dad["id"],
+            "assignee_id": mom["id"],
+        },
+    )
+    assert res.status_code == 201, res.text
+    data = res.json()
+    assert data["created_by_id"] == dad["id"]
+    assert data["assignee_id"] == mom["id"]
+    assert data["proposer"]["name"] == "爸爸"
+    assert data["assignee"]["name"] == "妈妈"
+
+
+def test_chore_without_proposer_is_allowed(client):
+    """没写提出人也能建任务（比如从模板批量导入的公共家务）。"""
+    code, (dad,) = _new_household(client, "无提出人", "独行者")
+    res = client.post(f"/api/households/{code}/chores", json={"title": "随手记一笔"})
+    assert res.status_code == 201
+    assert res.json()["created_by_id"] is None
+    assert res.json()["proposer"] is None
+
+
+def test_proposer_must_belong_to_household(client):
+    code, (_a, _b) = _new_household(client, "跨家庭校验", "甲", ["乙"])
+    outsider = client.post(
+        "/api/households", json={"name": "别人家", "owner_name": "外人"}
+    ).json()["members"][0]
+
+    res = client.post(
+        f"/api/households/{code}/chores",
+        json={"title": "越界任务", "created_by_id": outsider["id"]},
+    )
+    assert res.status_code == 400
+    assert "提出人" in res.json()["detail"]
+
+    res2 = client.post(
+        f"/api/households/{code}/chores",
+        json={"title": "越界任务2", "assignee_id": outsider["id"]},
+    )
+    assert res2.status_code == 400
+    assert "负责人" in res2.json()["detail"]
+
+
+def test_reassign_chore_to_another_member(client):
+    """改派：把任务从一个人名下转到另一个人名下。"""
+    code, (dad, mom, kid) = _new_household(client, "改派测试", "爸爸", ["妈妈", "孩子"])
+    chore = client.post(
+        f"/api/households/{code}/chores",
+        json={"title": "倒垃圾", "created_by_id": dad["id"], "assignee_id": mom["id"]},
+    ).json()
+
+    moved = client.patch(f"/api/chores/{chore['id']}", json={"assignee_id": kid["id"]})
+    assert moved.status_code == 200
+    assert moved.json()["assignee_id"] == kid["id"]
+    assert moved.json()["assignee"]["name"] == "孩子"
+    # 改派不动提出人 —— 谁想到的还是谁
+    assert moved.json()["created_by_id"] == dad["id"]
+
+    cleared = client.patch(f"/api/chores/{chore['id']}", json={"clear_assignee": True})
+    assert cleared.json()["assignee_id"] is None
+
+
+def test_today_puts_tasks_assigned_to_me_first(client):
+    """别人派给我的任务，在今日里排最前面，并计入「派给我的」条数。"""
+    code, (dad, mom) = _new_household(client, "今日排序", "爸爸", ["妈妈"])
+
+    client.post(
+        f"/api/households/{code}/chores",
+        json={"title": "爸爸自己的活", "freq": "daily", "points": 5, "assignee_id": dad["id"]},
+    )
+    client.post(
+        f"/api/households/{code}/chores",
+        json={"title": "爸爸派给妈妈的活", "freq": "daily", "points": 1,
+              "created_by_id": dad["id"], "assignee_id": mom["id"]},
+    )
+    client.post(
+        f"/api/households/{code}/chores",
+        json={"title": "妈妈自己做的小事", "freq": "daily", "points": 3,
+              "created_by_id": mom["id"], "assignee_id": mom["id"]},
+    )
+
+    data = client.get(f"/api/households/{code}/today?member_id={mom['id']}").json()
+    assert data["pending"], "今日应该有任务"
+    assert data["pending"][0]["title"] == "爸爸派给妈妈的活"
+    assert data["summary"]["assigned_to_me"] == 1
+
+    # 换成爸爸视角，就没有「别人派给我的」了
+    dad_view = client.get(f"/api/households/{code}/today?member_id={dad['id']}").json()
+    assert dad_view["summary"]["assigned_to_me"] == 0
+
+
+def test_stats_counts_proposals(client):
+    """统计里能看出谁在「想事情」：提出数与其中派给别人的条数。"""
+    code, (dad, mom) = _new_household(client, "提出统计", "爸爸", ["妈妈"])
+
+    client.post(
+        f"/api/households/{code}/chores",
+        json={"title": "约空调维修", "category": "invisible", "freq": "once",
+              "created_by_id": dad["id"]},
+    )
+    client.post(
+        f"/api/households/{code}/chores",
+        json={"title": "交物业费", "category": "invisible", "freq": "once",
+              "created_by_id": dad["id"]},
+    )
+    client.post(
+        f"/api/households/{code}/chores",
+        json={"title": "给花浇水", "created_by_id": mom["id"], "assignee_id": mom["id"]},
+    )
+
+    data = client.get(f"/api/households/{code}/stats?scope=all").json()
+    assert data["total_created"] == 3
+
+    by_id = {m["member_id"]: m for m in data["members"]}
+    assert by_id[dad["id"]]["created_count"] == 2
+    assert by_id[dad["id"]]["assigned_out"] == 0
+    assert by_id[mom["id"]]["created_count"] == 1
+    assert by_id[mom["id"]]["assigned_out"] == 0
+    # 隐形家务的积分仍按「谁做完算谁的」计，提出数单独一列，两者不互相污染
+    assert data["invisible_points"] == 0
+
+
+def test_import_presets_records_proposer(client):
+    code, (dad,) = _new_household(client, "导入记提出人", "爸爸")
+    res = client.post(
+        f"/api/households/{code}/chores/import",
+        json={"category": "invisible", "created_by_id": dad["id"]},
+    )
+    assert res.status_code == 200, res.text
+
+    chores = client.get(f"/api/households/{code}/chores").json()
+    assert chores, "应该导入了模板任务"
+    assert all(c["created_by_id"] == dad["id"] for c in chores)
+    assert all(c["proposer"]["name"] == "爸爸" for c in chores)

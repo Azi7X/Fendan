@@ -46,6 +46,12 @@
       </view>
     </view>
 
+    <!-- 别人派给我的活 -->
+    <view wx:if="{{summary.assignedToMe}}" class="callout">
+      <text class="callout-ic">📌</text>
+      <text class="callout-text">今天有 {{summary.assignedToMe}} 件活是家人想到之后交给你的，已经排在最前面。这些不是「顺手做一下」，是明确归你的责任。</text>
+    </view>
+
     <!-- 待完成 -->
     <view class="section">
       <view class="section-head">
@@ -62,15 +68,17 @@
       <view
         wx:for="{{pending}}"
         wx:key="id"
-        class="task cat-{{item.category}}"
+        class="task cat-{{item.category}} {{item.assignedToMe ? 'has-assign' : ''}}"
       >
         <view class="check" data-id="{{item.id}}" data-done="false" catchtap="toggleDone">✓</view>
         <view class="body" data-id="{{item.id}}" bindtap="editChore">
           <view class="task-title">{{item.title}}</view>
           <view class="task-sub">
-            <block wx:if="{{item.assignee_id}}">
+            <view wx:if="{{item.whoType === 'toMe'}}" class="badge-assigned">📌 {{item.whoText}}</view>
+            <view wx:elif="{{item.whoType === 'byMe'}}" class="badge-proposer">{{item.whoText}}</view>
+            <block wx:elif="{{item.whoType === 'assignee'}}">
               <view class="avatar sm" style="background:{{item.assigneeColor}}22">{{item.assigneeEmoji}}</view>
-              <text class="who">{{item.assigneeName}}{{item.assignee_id === myId ? ' · 我' : ''}}</text>
+              <text class="who">{{item.assigneeName}}{{item.assigneeIsMe ? ' · 我' : ''}}</text>
             </block>
             <text wx:else class="badge-nobody">待认领</text>
             <text class="sep">·</text>
@@ -100,7 +108,9 @@
         <view class="body" data-id="{{item.id}}" bindtap="editChore">
           <view class="task-title">{{item.title}}</view>
           <view class="task-sub">
-            <block wx:if="{{item.assignee_id}}">
+            <view wx:if="{{item.whoType === 'toMe'}}" class="badge-assigned">📌 {{item.whoText}}</view>
+            <view wx:elif="{{item.whoType === 'byMe'}}" class="badge-proposer">{{item.whoText}}</view>
+            <block wx:elif="{{item.whoType === 'assignee'}}">
               <view class="avatar sm" style="background:{{item.assigneeColor}}22">{{item.assigneeEmoji}}</view>
               <text class="who">{{item.assigneeName}}</text>
             </block>

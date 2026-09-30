@@ -24,10 +24,38 @@ function buildContext(family) {
   return { members, byPeriod };
 }
 
-function decorateChore(chore, ctx, dayIso) {
+/**
+ * 把一条原始 chore 补上展示需要的字段。
+ *
+ * myId 是「我」的成员 id，用来判断这项任务和我是什么关系：
+ *   toMe —— 别人想到、派给我做的（要显眼，否则就等于靠自觉）
+ *   byMe —— 我想到、派给别人做的（也让「操心」这件事被看见）
+ */
+function decorateChore(chore, ctx, dayIso, myId) {
   const key = periods.periodKey(chore.freq, dayIso);
   const record = ctx.byPeriod[`${chore.id}|${key}`];
   const assignee = chore.assignee_id ? ctx.members[chore.assignee_id] : null;
+  const proposer = chore.created_by_id ? ctx.members[chore.created_by_id] : null;
+  const mine = myId || null;
+
+  const assignedToMe = !!(
+    mine && chore.assignee_id === mine && chore.created_by_id && chore.created_by_id !== mine
+  );
+  const assignedByMe = !!(
+    mine && chore.created_by_id === mine && chore.assignee_id && chore.assignee_id !== mine
+  );
+
+  let whoType = 'nobody';
+  let whoText = '';
+  if (assignedToMe) {
+    whoType = 'toMe';
+    whoText = `${proposer ? proposer.name : '家人'} 派给我的`;
+  } else if (assignedByMe) {
+    whoType = 'byMe';
+    whoText = `我提的 · ${assignee ? assignee.name : '别人'} 负责`;
+  } else if (assignee) {
+    whoType = 'assignee';
+  }
 
   return {
     id: chore.id,
@@ -40,27 +68,42 @@ function decorateChore(chore, ctx, dayIso) {
     points: chore.points,
     note: chore.note || '',
     is_active: chore.is_active,
+    createdById: chore.created_by_id || null,
+    proposerName: proposer ? proposer.name : '',
+    proposerShort: proposer ? `${proposer.name} 提的` : '',
     assignee_id: chore.assignee_id || null,
     assigneeName: assignee ? assignee.name : '',
     assigneeEmoji: assignee ? assignee.emoji : '',
     assigneeColor: assignee ? assignee.color : '',
+    assigneeIsMe: !!(mine && assignee && assignee.id === mine),
+    assignedToMe,
+    assignedByMe,
+    whoType,
+    whoText,
     done: !!record,
     doneAt: record ? record.done_at : '',
   };
 }
 
-function buildToday(family, dayIso) {
+function buildToday(family, dayIso, myId) {
   const ctx = buildContext(family);
   const duties = family.chores
     .filter((chore) => periods.isDue(chore, dayIso))
-    .map((chore) => decorateChore(chore, ctx, dayIso));
+    .map((chore) => decorateChore(chore, ctx, dayIso, myId));
+
+  // 排序：先排别人派给我的（最需要被看见），再排没人认领的，最后按积分从高到低
+  const rank = (item) => {
+    if (item.assignedToMe) return 0;
+    if (!item.assignee_id) return 1;
+    return 2;
+  };
 
   const pending = duties
     .filter((item) => !item.done)
     .sort((a, b) => {
-      const aUnassigned = a.assignee_id ? 1 : 0;
-      const bUnassigned = b.assignee_id ? 1 : 0;
-      if (aUnassigned !== bUnassigned) return aUnassigned - bUnassigned;
+      const ra = rank(a);
+      const rb = rank(b);
+      if (ra !== rb) return ra - rb;
       if (a.points !== b.points) return b.points - a.points;
       return a.id - b.id;
     });
@@ -80,6 +123,7 @@ function buildToday(family, dayIso) {
       pointsTotal: all.reduce((sum, item) => sum + (item.points || 0), 0),
       pointsDone: done.reduce((sum, item) => sum + (item.points || 0), 0),
       unassigned: all.filter((item) => !item.assignee_id).length,
+      assignedToMe: pending.filter((item) => item.assignedToMe).length,
     },
   };
 }
@@ -164,6 +208,8 @@ function buildStats(family, scope) {
       doneCount: 0,
       points: 0,
       invisibleDone: 0,
+      createdCount: 0,
+      assignedOut: 0,
     };
   });
   const orphan = {
@@ -174,6 +220,8 @@ function buildStats(family, scope) {
     doneCount: 0,
     points: 0,
     invisibleDone: 0,
+    createdCount: 0,
+    assignedOut: 0,
   };
 
   let totalPoints = 0;
@@ -197,6 +245,23 @@ function buildStats(family, scope) {
   if (orphan.doneCount) list.push(orphan);
   list.sort((a, b) => b.points - a.points || a.memberId - b.memberId);
 
+  // 「提出数」—— 谁在负责「想到」。
+  // 记着买日用品、约维修、安排行程，这类脑力活过去完全不可见；
+  // 按任务的创建时间落在统计区间内来算，和「做完」分开计。
+  const scopedChores = family.chores.filter((chore) => {
+    if (!start) return true;
+    const day = localDayOf(chore.created_at);
+    return day && day >= start;
+  });
+  scopedChores.forEach((chore) => {
+    const bucket = buckets[chore.created_by_id];
+    if (!bucket) return;
+    bucket.createdCount += 1;
+    if (chore.assignee_id && chore.assignee_id !== chore.created_by_id) {
+      bucket.assignedOut += 1;
+    }
+  });
+
   const today = periods.todayISO();
   const series = [];
   for (let offset = 6; offset >= 0; offset -= 1) {
@@ -217,6 +282,12 @@ function buildStats(family, scope) {
   const realMembers = list.filter((item) => item.memberId !== 0).map((item) => item.points);
   const fairness = Math.max(0, 1 - gini(realMembers.length ? realMembers : [0]));
 
+  // 谁在操心：按提出数单独排一次，和「谁做了多少」是两张榜
+  const creators = list
+    .filter((item) => item.memberId !== 0)
+    .slice()
+    .sort((a, b) => b.createdCount - a.createdCount || a.memberId - b.memberId);
+
   return {
     scope,
     scopeLabel: scopeLabel(scope),
@@ -224,9 +295,12 @@ function buildStats(family, scope) {
     totalPoints,
     invisiblePoints,
     invisibleRatio: totalPoints ? Math.round((invisiblePoints / totalPoints) * 100) : 0,
+    totalCreated: scopedChores.length,
     fairness: Math.round(fairness * 100),
     maxPoints: Math.max(1, ...list.map((item) => item.points)),
+    maxCreated: Math.max(1, ...creators.map((item) => item.createdCount)),
     members: list,
+    creators,
     series,
     seriesMax: Math.max(1, ...series.map((item) => item.points)),
   };

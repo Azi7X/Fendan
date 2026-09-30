@@ -99,6 +99,22 @@ def household_stats(
     if unassigned.done_count:
         payload.append(unassigned)
 
+    # 「提出数」—— 谁在负责「想到」。
+    # 这类脑力活过去完全不可见：记着买日用品、约维修、安排行程，
+    # 做的人不提，家里就没人知道是谁在操心。按任务的创建时间落在统计区间内来算。
+    created_query = db.query(Chore).filter(Chore.household_id == household.id)
+    if since is not None:
+        created_query = created_query.filter(Chore.created_at >= since)
+    created_chores = created_query.all()
+
+    for chore in created_chores:
+        bucket = stats.get(chore.created_by_id)
+        if bucket is None:
+            continue
+        bucket.created_count += 1
+        if chore.assignee_id and chore.assignee_id != chore.created_by_id:
+            bucket.assigned_out += 1
+
     gini = _gini([s.points for s in payload if s.member_id != 0] or [0])
 
     # 近 7 天完成趋势
@@ -127,6 +143,7 @@ def household_stats(
         total_done=sum(s.done_count for s in payload),
         total_points=total_points,
         invisible_points=invisible_points,
+        total_created=len(created_chores),
         fairness=round(max(0.0, 1 - gini), 3),
         members=sorted(payload, key=lambda s: (-s.points, s.member_id)),
         daily_series=daily_series,

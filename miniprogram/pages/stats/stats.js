@@ -18,7 +18,9 @@ Page({
     verdict: '',
     invisiblePoints: 0,
     invisibleRatio: 0,
+    totalCreated: 0,
     members: [],
+    creators: [],
     series: [],
     trendMax: 1,
   },
@@ -53,6 +55,20 @@ Page({
         tag: item.invisibleDone ? `其中隐形家务 ${item.invisibleDone} 项` : '暂无隐形家务记录',
       }));
 
+      // 「谁在操心」：提出数排行，和「谁做了多少」是两张榜
+      const creators = stats.creators.map((item) => ({
+        memberId: item.memberId,
+        name: item.name,
+        emoji: item.emoji,
+        color: item.color,
+        createdCount: item.createdCount,
+        assignedOut: item.assignedOut,
+        percent: Math.round((item.createdCount / stats.maxCreated) * 100),
+        tag: item.assignedOut
+          ? `其中 ${item.assignedOut} 项派给了别人`
+          : (item.createdCount ? '想到的都自己收着做' : '还没有提出过任务'),
+      }));
+
       const series = stats.series.map((point) => ({
         label: point.label,
         weekdayShort: point.weekdayShort,
@@ -71,7 +87,9 @@ Page({
         verdict: this.verdictOf(stats.fairness),
         invisiblePoints: stats.invisiblePoints,
         invisibleRatio: stats.invisibleRatio,
+        totalCreated: stats.totalCreated,
         members,
+        creators,
         series,
         trendMax: stats.seriesMax,
       });

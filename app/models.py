@@ -49,7 +49,13 @@ class Chore(Base):
 
     category: daily(日常) / cycle(周期性) / invisible(隐形家务)
     freq:     daily(每天) / weekly(每周) / monthly(每月) / once(一次性)
-    责任整卡制 —— 一个任务只挂一个 assignee_id，从「想到」到「执行」全归他。
+
+    「想到」与「做完」是两个动作，分别记在两个人身上：
+      created_by_id —— 谁提出这件事（脑力活，往往是隐形家务）
+      assignee_id   —— 谁负责把它做完（执行活，责任整卡制，只归一个人）
+
+    一个人想到的事可以派给任何家庭成员做；被派的人不再是「靠自觉」，
+    而是有一条明确属于他的任务。提出人负责记录，不当监工。
     """
 
     __tablename__ = "chores"
@@ -65,6 +71,9 @@ class Chore(Base):
     monthday: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 1-31
     points: Mapped[int] = mapped_column(Integer, default=1)
     note: Mapped[str] = mapped_column(Text, default="")
+    created_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("members.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     assignee_id: Mapped[int | None] = mapped_column(
         ForeignKey("members.id", ondelete="SET NULL"), nullable=True
     )

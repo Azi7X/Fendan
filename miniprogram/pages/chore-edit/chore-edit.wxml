@@ -8,7 +8,7 @@
   <block wx:else>
     <view class="intro">
       <text class="intro-title">{{isEdit ? '编辑这项任务' : '新增一件家务'}}</text>
-      <text class="intro-desc">写得越具体，家里越不会扯皮。比如「洗碗」比「收拾厨房」清楚得多。</text>
+      <text class="intro-desc">{{isEdit ? '换负责人就是把这项责任转给别人 —— 改派不影响「谁提的」。' : '想到什么活，顺手选好负责人，这件事就算派到位了。'}}</text>
     </view>
 
     <view class="section">
@@ -84,6 +84,21 @@
       </view>
 
       <view class="field">
+        <text class="label">谁想到的（提出人）</text>
+        <view class="chips">
+          <view
+            wx:for="{{members}}"
+            wx:key="id"
+            class="chip {{proposerId === item.id ? 'active' : ''}}"
+            data-value="{{item.id}}"
+            bindtap="pickProposer"
+          >{{item.label}}</view>
+          <view class="chip {{proposerId === 0 ? 'active' : ''}}" data-value="0" bindtap="pickProposer">不指定</view>
+        </view>
+        <text class="hint">「记着要有这件事」本身就是一件家务。写下来，谁在操心就看得见了。</text>
+      </view>
+
+      <view class="field">
         <text class="label">谁负责（责任整卡制：一件事只归一个人）</text>
         <view class="chips">
           <view class="chip {{assigneeId === 0 ? 'active' : ''}}" data-value="0" bindtap="pickAssignee">暂不分配</view>
@@ -95,6 +110,7 @@
             bindtap="pickAssignee"
           >{{item.label}}</view>
         </view>
+        <text class="hint">可以选家里任何一个人。选了别人，这项任务就会出现在他的「今日」最前面。</text>
       </view>
 
       <view class="field">

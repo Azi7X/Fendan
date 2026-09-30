@@ -247,6 +247,8 @@ async function createChore(householdId, payload) {
     monthday: payload.freq === 'monthly' ? payload.monthday : null,
     points: payload.points || 2,
     note: (payload.note || '').slice(0, 120),
+    // 提出人：谁想到这件事的；负责人：谁去做。两个可以是不同的人。
+    created_by_id: payload.created_by_id || null,
     assignee_id: payload.assignee_id || null,
     is_active: true,
   };
@@ -265,6 +267,7 @@ async function updateChore(choreId, patch) {
   if (patch.monthday !== undefined) payload.monthday = patch.monthday;
   if (patch.points !== undefined) payload.points = patch.points;
   if (patch.note !== undefined) payload.note = String(patch.note).slice(0, 120);
+  if (patch.created_by_id !== undefined) payload.created_by_id = patch.created_by_id || null;
   if (patch.assignee_id !== undefined) payload.assignee_id = patch.assignee_id || null;
   if (patch.is_active !== undefined) payload.is_active = patch.is_active;
 
@@ -290,7 +293,7 @@ async function deleteChore(choreId) {
 }
 
 /** 按模板批量导入，跳过同名任务。 */
-async function importPresets(householdId, keys, existingTitles, assigneeId) {
+async function importPresets(householdId, keys, existingTitles, assigneeId, createdById) {
   const seen = existingTitles || {};
   const rows = [];
 
@@ -307,6 +310,7 @@ async function importPresets(householdId, keys, existingTitles, assigneeId) {
       monthday: preset.monthday === undefined ? null : preset.monthday,
       points: preset.points || 2,
       note: preset.note || '',
+      created_by_id: createdById || null,
       assignee_id: assigneeId || null,
       is_active: true,
     });

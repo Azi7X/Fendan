@@ -159,6 +159,30 @@ view, text, button, input, textarea {
   border-radius: 14rpx;
 }
 
+/* ---------------- 派单标记 ---------------- */
+/* 别人派给我的：整张卡描一圈蓝边，扫一眼就知道哪些是「落到我头上」的 */
+.task.has-assign {
+  border-color: #7fadf5;
+  box-shadow: 0 0 0 4rpx rgba(74, 144, 226, 0.16);
+}
+.badge-assigned {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #0958d9;
+  background: #e8f1ff;
+  padding: 4rpx 14rpx;
+  border-radius: 14rpx;
+}
+/* 我提的、由别人做：说明这件事是你想起来的，不是你在做 */
+.badge-proposer {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #7a4bd0;
+  background: #f4eeff;
+  padding: 4rpx 14rpx;
+  border-radius: 14rpx;
+}
+
 /* ---------------- 空状态 ---------------- */
 .empty {
   padding: 90rpx 40rpx;
@@ -190,6 +214,15 @@ view, text, button, input, textarea {
   background: #ffffff;
   color: #6344e8;
   box-shadow: 0 4rpx 14rpx rgba(87, 70, 160, 0.12);
+}
+/* 第二行筛选，比分类行更轻，避免两行看起来一样重 */
+.segmented.slim {
+  margin-top: 14rpx;
+  background: #f2effb;
+}
+.segmented.slim .item {
+  font-size: 24rpx;
+  padding: 14rpx 0;
 }
 
 /* ---------------- 表单 ---------------- */

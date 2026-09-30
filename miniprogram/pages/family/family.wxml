@@ -62,7 +62,7 @@
 
     <view class="section">
       <button class="btn line" bindtap="handleSignOut">退出这个家庭</button>
-      <view class="version">分担 v0.1 · 把模糊的家务变成清晰的任务</view>
+      <view class="version">分担 v0.2 · 把模糊的家务变成清晰的任务</view>
     </view>
   </block>
 

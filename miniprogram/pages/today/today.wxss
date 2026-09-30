@@ -125,3 +125,26 @@
   color: #ffffff;
 }
 .quick-ic { font-size: 34rpx; }
+
+/* ---------------- 别人派给我的活 ---------------- */
+/* 顶部提示条：被派活这件事必须被明确告知，否则又退回「靠自觉」 */
+.callout {
+  display: flex;
+  align-items: flex-start;
+  margin: 20rpx 32rpx 0;
+  padding: 24rpx 26rpx;
+  background: #e8f1ff;
+  border-radius: 26rpx;
+}
+.callout-ic {
+  font-size: 30rpx;
+  flex-shrink: 0;
+  margin-right: 14rpx;
+  line-height: 1.4;
+}
+.callout-text {
+  flex: 1;
+  font-size: 24rpx;
+  line-height: 1.65;
+  color: #1d39c4;
+}

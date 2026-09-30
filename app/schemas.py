@@ -38,6 +38,9 @@ class ChoreCreate(BaseModel):
     monthday: int | None = Field(default=None, ge=1, le=31)
     points: int = Field(default=1, ge=1, le=10)
     note: str = Field(default="", max_length=500)
+    # 提出人：谁想到这件事的。不传则由调用方视为「无人认领的提议」。
+    created_by_id: int | None = None
+    # 负责人：可以指派给家里任何一个人，包括自己。
     assignee_id: int | None = None
 
 
@@ -49,8 +52,10 @@ class ChoreUpdate(BaseModel):
     monthday: int | None = Field(default=None, ge=1, le=31)
     points: int | None = Field(default=None, ge=1, le=10)
     note: str | None = Field(default=None, max_length=500)
+    created_by_id: int | None = None
     assignee_id: int | None = None
     is_active: bool | None = None
+    clear_created_by: bool = False
     clear_assignee: bool = False
 
 
@@ -62,6 +67,7 @@ class CompleteIn(BaseModel):
 class PresetImport(BaseModel):
     keys: list[str] = Field(default_factory=list)
     category: str | None = None  # 传分类则导入该分类全部模板
+    created_by_id: int | None = None  # 谁导入的，算作这批任务的提出人
 
 
 # ---------- 响应 ----------
@@ -99,9 +105,11 @@ class ChoreOut(BaseModel):
     monthday: int | None
     points: int
     note: str
+    created_by_id: int | None = None
     assignee_id: int | None
     is_active: bool
     freq_text: str = ""
+    proposer: MemberOut | None = None
     assignee: MemberOut | None = None
     done: bool = False
     done_at: datetime | None = None
@@ -132,6 +140,10 @@ class MemberStat(BaseModel):
     done_count: int
     points: int
     invisible_done: int
+    # 提出数：这位成员「想到」并写下来的任务数 —— 脑力付出，也算一份贡献
+    created_count: int = 0
+    # 其中派给别人做的条数，用来区分「自己想到自己做」与「想到之后协调出去」
+    assigned_out: int = 0
 
 
 class StatsOut(BaseModel):
@@ -140,6 +152,7 @@ class StatsOut(BaseModel):
     total_done: int
     total_points: int
     invisible_points: int
+    total_created: int = 0
     fairness: float
     members: list[MemberStat]
     daily_series: list[dict] = []

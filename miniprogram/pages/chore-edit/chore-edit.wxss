@@ -14,6 +14,15 @@
 
 .custom-day { margin-top: 14rpx; }
 
+/* 字段下方的说明文字：讲清「提出人」和「负责人」分别是什么意思 */
+.hint {
+  display: block;
+  margin-top: 14rpx;
+  font-size: 22rpx;
+  line-height: 1.65;
+  color: #a49fbb;
+}
+
 .row-actions {
   display: flex;
   margin-top: 22rpx;

@@ -68,6 +68,17 @@ def member_out(member: Member | None) -> MemberOut | None:
     return MemberOut.model_validate(member)
 
 
+def resolve_member(db: Session, household_id: int, member_id: int | None,
+                   field: str) -> int | None:
+    """校验某位成员确实属于这个家庭，返回 id；member_id 为空则返回 None。"""
+    if member_id is None:
+        return None
+    member = db.get(Member, member_id)
+    if member is None or member.household_id != household_id:
+        raise HTTPException(status_code=400, detail=f"指定的{field}不属于这个家庭")
+    return member.id
+
+
 def completion_map(db: Session, chore_ids: list[int], key: str) -> dict[int, Completion]:
     """取这批任务在指定周期内的完成记录。"""
     if not chore_ids:
@@ -86,6 +97,7 @@ def chore_to_out(chore: Chore, done_map: dict[int, Completion] | None = None,
     members = members or {}
     record = done_map.get(chore.id)
     assignee = members.get(chore.assignee_id) if chore.assignee_id else None
+    proposer = members.get(chore.created_by_id) if chore.created_by_id else None
     return ChoreOut(
         id=chore.id,
         title=chore.title,
@@ -95,9 +107,11 @@ def chore_to_out(chore: Chore, done_map: dict[int, Completion] | None = None,
         monthday=chore.monthday,
         points=chore.points,
         note=chore.note or "",
+        created_by_id=chore.created_by_id,
         assignee_id=chore.assignee_id,
         is_active=chore.is_active,
         freq_text=periods.freq_text(chore),
+        proposer=member_out(proposer),
         assignee=member_out(assignee),
         done=record is not None,
         done_at=record.done_at if record else None,
@@ -110,7 +124,8 @@ def members_index(db: Session, household_id: int) -> dict[int, Member]:
 
 
 def import_presets(db: Session, household: Household, keys: list[str],
-                   category: str | None, default_assignee: int | None = None) -> int:
+                   category: str | None, default_assignee: int | None = None,
+                   created_by: int | None = None) -> int:
     """导入模板任务，跳过已存在的同名任务，返回新增条数。
 
     keys 与 category 都不传时，导入全部模板。
@@ -138,6 +153,7 @@ def import_presets(db: Session, household: Household, keys: list[str],
                 monthday=preset.get("monthday"),
                 points=preset.get("points", 1),
                 note=preset.get("note", ""),
+                created_by_id=created_by,
                 assignee_id=default_assignee,
             )
         )

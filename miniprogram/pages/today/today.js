@@ -10,7 +10,7 @@ Page({
     isToday: true,
     weekdayLabel: '',
     weekDays: [],
-    summary: { total: 0, done: 0, pointsTotal: 0, pointsDone: 0, unassigned: 0 },
+    summary: { total: 0, done: 0, pointsTotal: 0, pointsDone: 0, unassigned: 0, assignedToMe: 0 },
     percent: 0,
     pending: [],
     done: [],
@@ -37,7 +37,8 @@ Page({
     try {
       const family = await store.ensureFamily(!!force);
       const week = views.buildWeek(family, selectedDay);
-      const today = views.buildToday(family, selectedDay);
+      // 传进 myId：别人派给我的任务会被标出来，并排在最前面
+      const today = views.buildToday(family, selectedDay, store.state.memberId);
       const mine = family.members.filter((m) => m.id === store.state.memberId)[0];
 
       this.setData({

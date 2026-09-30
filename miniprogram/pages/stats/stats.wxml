@@ -75,6 +75,36 @@
       </view>
     </view>
 
+    <!-- 谁在操心 -->
+    <view class="section">
+      <view class="section-head">
+        <text class="title">谁在操心</text>
+        <text class="count">共提出 {{totalCreated}} 项</text>
+      </view>
+      <view class="card">
+        <view wx:if="{{creators.length === 0}}" class="empty">
+          <text class="line">还没有成员</text>
+        </view>
+        <view wx:for="{{creators}}" wx:key="memberId" class="rank-row">
+          <view class="avatar lg" style="background:{{item.color}}22">{{item.emoji}}</view>
+          <view class="rank-info">
+            <view class="rank-name">
+              <text class="nm">{{item.name}}</text>
+              <text class="sc">提出 {{item.createdCount}} 项</text>
+            </view>
+            <view class="bar">
+              <view class="fill" style="width:{{item.percent}}%;background:{{item.color}}"></view>
+            </view>
+            <text class="rank-tag">{{item.tag}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="fairness-note">
+        <text>「提出」指的是谁想到并记下了这件事 —— 这部分脑力活过去完全不计分，却是家务里最累人的一块。提出得多、又大多自己收着做的人，往往就是家里那个「总在惦记」的人。</text>
+      </view>
+    </view>
+
     <!-- 隐形家务占比 -->
     <view class="section">
       <view class="section-head">

@@ -19,7 +19,9 @@ Page({
     monthday: 1,
     monthdayCustom: '',
     points: 2,
+    proposerId: 0,
     assigneeId: 0,
+    myId: null,
     note: '',
     isActive: true,
 
@@ -75,11 +77,14 @@ Page({
       id: m.id,
       name: m.name,
       emoji: m.emoji,
-      label: `${m.emoji} ${m.name}`,
+      label: `${m.emoji} ${m.name}${m.id === store.state.memberId ? '（我）' : ''}`,
     }));
 
+    const myId = store.state.memberId || 0;
+
     if (!this.data.isEdit) {
-      this.setData({ members, ready: true });
+      // 新建时默认「我想到的」—— 谁开的头，记谁名下
+      this.setData({ members, myId, proposerId: myId, ready: true });
       return;
     }
 
@@ -97,6 +102,7 @@ Page({
 
     this.setData({
       members,
+      myId,
       ready: true,
       title: chore.title,
       category: chore.category,
@@ -105,6 +111,7 @@ Page({
       monthday: isPresetMonthday ? chore.monthday : 1,
       monthdayCustom: isPresetMonthday || !chore.monthday ? '' : String(chore.monthday),
       points: chore.points,
+      proposerId: chore.created_by_id || 0,
       assigneeId: chore.assignee_id || 0,
       note: chore.note || '',
       isActive: chore.is_active,
@@ -120,6 +127,7 @@ Page({
   pickWeekday(e) { this.setData({ weekday: Number(e.currentTarget.dataset.value) }); },
   pickMonthday(e) { this.setData({ monthday: Number(e.currentTarget.dataset.value), monthdayCustom: '' }); },
   pickPoints(e) { this.setData({ points: Number(e.currentTarget.dataset.value) }); },
+  pickProposer(e) { this.setData({ proposerId: Number(e.currentTarget.dataset.value) }); },
   pickAssignee(e) { this.setData({ assigneeId: Number(e.currentTarget.dataset.value) }); },
 
   async save() {
@@ -146,6 +154,7 @@ Page({
       monthday,
       points: this.data.points,
       note: this.data.note,
+      created_by_id: this.data.proposerId || null,
       assignee_id: this.data.assigneeId || null,
     };
 

@@ -13,10 +13,10 @@ miniprogram/
 ├── pages/
 │   ├── login/              # 启动页：微信一键登录 → 创建家庭 / 邀请码加入
 │   ├── today/              # 今日视图：周条 + 完成度 + 打卡
-│   ├── chores/             # 家务清单：三类分组 + 模板一键导入
-│   ├── stats/              # 付出统计：公平度 + 隐形家务占比 + 近 7 天趋势
+│   ├── chores/             # 家务清单：三类分组 + 「我派的 / 派给我的」视角 + 模板导入
+│   ├── stats/              # 付出统计：公平度 + 谁在操心 + 隐形家务占比 + 近 7 天趋势
 │   ├── family/             # 家庭：成员、邀请码、自动均衡分配
-│   └── chore-edit/         # 新增 / 编辑任务
+│   └── chore-edit/         # 新增 / 编辑任务（提出人 + 负责人）
 └── utils/
     ├── config.js           # 云服务 publicConfig（endpoint + publishableKey）
     ├── cloud.js            # 客户端初始化（全项目唯一一次）
@@ -34,7 +34,7 @@ miniprogram/
 | --- | --- |
 | `households` | 家庭：名称 + 6 位邀请码，`owner_id` 为创建者 |
 | `members` | 成员：`user_id` 指向登录身份，含名字 / emoji / 头像色 |
-| `chores` | 家务任务：三类分类、四种周期、积分、**单一负责人（责任整卡制）** |
+| `chores` | 家务任务：三类分类、四种周期、积分、`created_by_id`（提出人）、`assignee_id`（负责人） |
 | `completions` | 打卡记录：`(chore_id, period_key)` 唯一，同周期不会重复计分 |
 
 所有写入都发生在客户端，数据隔离靠数据库的 RLS（Row Level Security）：
@@ -43,6 +43,30 @@ miniprogram/
 - `chores` / `completions` 只能读写自己所在家庭的数据
 - 客户端**从不发送** `owner_id` / `user_id`，由 `DEFAULT auth.uid()` 以及 RLS 的 `WITH CHECK` 决定
 - 邀请码不公开可枚举：加入家庭走服务端函数 `join_household(code, name, emoji)`，校验通过才登记成员
+
+`created_by_id` 和 `assignee_id` 都只是普通的 `bigint` 外键（指向 `members`，`ON DELETE SET NULL`），
+权限判断仍然只看 `household_id` —— **谁提出、谁负责都不影响谁能看到这条数据**，
+家庭内部本来就不该有可见性差异。约束靠客户端表单保证（只能从本家庭成员里选）。
+
+## 提出人与负责人
+
+一项任务有两个角色，可以不是同一个人：
+
+| 角色 | 字段 | 谁填 | 说明 |
+| --- | --- | --- | --- |
+| 提出人 | `created_by_id` | 新建时默认「我」 | 谁想到这件事的。批量导入模板时，记导的人 |
+| 负责人 | `assignee_id` | 表单里选，可以是任何成员 | 谁去做。责任整卡制，只挂一个人 |
+
+`views.decorateChore(chore, ctx, day, myId)` 会据此算出 `whoType`，页面直接按它渲染：
+
+| whoType | 什么时候 | 显示 |
+| --- | --- | --- |
+| `toMe` | 别人提出、派给我做 | `📌 XX 派给我的`，整张卡描蓝边，在「今日」排最前 |
+| `byMe` | 我提出、派给别人做 | `我提的 · XX 负责` |
+| `assignee` | 其他有负责人的情况 | 头像 + 名字 |
+| `nobody` | 还没人认领 | `待认领` |
+
+改派（改 `assignee_id`）不影响 `created_by_id` —— 谁想到的还是谁。
 
 ## 周期规则
 
@@ -60,3 +84,15 @@ miniprogram/
 - 依赖通过 `package.json` 声明，在开发者工具里执行一次「工具 → 构建 npm」生成 `miniprogram_npm`。
 - 请求失败会在真机 vConsole 里输出 `[WorkBuddy Cloud] request failed`，带 HTTP 状态与错误码；成功请求不打印。
 - 不要在 `utils/config.js` 之外硬编码 endpoint。小程序没有 Origin，靠微信的请求域名白名单鉴权，所有小程序共用同一个网关地址。
+
+## 改完怎么验证
+
+小程序路径**不做编译验证**（不依赖微信开发者工具），所以用两个等价的结构性检查代替：
+
+```bash
+python scripts/check_miniprogram.py   # JS 语法 / JSON / 页面清单 / tabBar / 事件绑定 / require 路径
+node   scripts/test_views.js          # 今日排序、派单标记、统计口径
+```
+
+`utils/views.js` 和 `utils/periods.js` 是纯计算、不碰 `wx.*`，所以能直接在 Node 里跑测试 ——
+新增或调整视图逻辑时，往 `scripts/test_views.js` 里补一条断言即可。

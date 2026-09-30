@@ -65,6 +65,7 @@ const S = {
   week: null,
   chores: [],
   catFilter: "all",
+  roleFilter: "all",   // all | by_me（我派的） | to_me（派给我的）
   statsScope: "week",
   stats: null,
   meta: null,
@@ -74,6 +75,44 @@ const S = {
 
 const me = () => (S.household?.members || []).find((m) => m.id === S.session?.memberId) || null;
 const memberById = (id) => (S.household?.members || []).find((m) => m.id === id) || null;
+
+/* ---- 「我」和一项任务的关系 ----------------------------------
+   「想到」和「做完」是两个人干的活，所以有两种关系要区分：
+     to_me   别人想到、派给我做的  → 必须显眼，否则就变成靠自觉
+     by_me   我想到、派给别人做的  → 也记一笔，让「操心」这件事被看见
+   ------------------------------------------------------------ */
+const myId = () => S.session?.memberId ?? null;
+
+function isAssignedToMe(chore) {
+  const mine = myId();
+  return !!mine && chore.assignee_id === mine
+    && !!chore.created_by_id && chore.created_by_id !== mine;
+}
+
+function isAssignedByMe(chore) {
+  const mine = myId();
+  return !!mine && chore.created_by_id === mine
+    && !!chore.assignee_id && chore.assignee_id !== mine;
+}
+
+/** 任务卡副行：谁负责 / 谁派的 / 待认领，三选一。 */
+function whoLine(chore, { showSelfTag = true } = {}) {
+  const mine = myId();
+  const proposer = chore.created_by_id ? memberById(chore.created_by_id) : null;
+  const assignee = chore.assignee_id ? memberById(chore.assignee_id) : null;
+
+  if (isAssignedToMe(chore)) {
+    return `<span class="badge-assigned">📌 ${esc(proposer.name)} 派给我的</span>`;
+  }
+  if (isAssignedByMe(chore)) {
+    return `<span class="badge-proposer">我提的 · ${esc(assignee.name)} 负责</span>`;
+  }
+  if (assignee) {
+    const self = showSelfTag && assignee.id === mine ? " · 我" : "";
+    return `<span class="who"><i class="avatar" style="background:${assignee.color}22">${assignee.emoji}</i>${esc(assignee.name)}${self}</span>`;
+  }
+  return `<span class="badge-nobody">待认领</span>`;
+}
 
 function saveSession() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(S.session));
@@ -95,7 +134,7 @@ async function loadHousehold() {
 }
 
 async function loadToday() {
-  const q = `?day=${S.selectedDay}`;
+  const q = `?day=${S.selectedDay}&member_id=${S.session.memberId ?? ""}`;
   [S.today, S.week] = await Promise.all([
     request(`/api/households/${S.session.code}/today${q}`),
     request(`/api/households/${S.session.code}/week?start=${mondayOf(S.selectedDay)}`),
@@ -144,7 +183,7 @@ function viewWelcome() {
       </div>
       <div class="fact">
         <span class="ic">🤝</span>
-        <div><b>责任整卡制</b><span>一项任务从「想到」到「做完」全归一个人，另一方不当监工</span></div>
+        <div><b>想到就能派出去</b><span>谁想到的都记一笔，直接派给家里任何一个人 —— 派了就归他，你不再当监工</span></div>
       </div>
       <div class="fact">
         <span class="ic">📊</span>
@@ -206,6 +245,13 @@ function viewToday() {
       </div>
     </div>
 
+    ${t.summary.assigned_to_me ? `
+    <div class="callout">
+      <span class="ic">📌</span>
+      <div>今天有 <b>${t.summary.assigned_to_me} 件</b>活是家人想到之后交给你的，已经排在最前面。
+        这些不是「顺手做一下」，是明确归你的责任。</div>
+    </div>` : ""}
+
     <div class="section">
       <div class="section-head">
         <h2>待完成</h2>
@@ -229,18 +275,14 @@ function viewToday() {
 }
 
 function taskCard(chore) {
-  const who = memberById(chore.assignee_id);
   const cat = CATS[chore.category] || CATS.daily;
-  const isMine = who && S.session?.memberId === who.id;
   return `
-  <div class="task cat-${chore.category} ${chore.done ? "done" : ""}" data-id="${chore.id}">
+  <div class="task cat-${chore.category} ${chore.done ? "done" : ""} ${isAssignedToMe(chore) ? "has-assign" : ""}" data-id="${chore.id}">
     <div class="check" data-action="toggle" data-id="${chore.id}" data-done="${chore.done}">✓</div>
     <div class="body" data-action="edit-chore" data-id="${chore.id}">
       <div class="title">${esc(chore.title)}</div>
       <div class="sub">
-        ${who
-          ? `<span class="who"><i class="avatar" style="background:${who.color}22">${who.emoji}</i>${esc(who.name)}${isMine ? " · 我" : ""}</span>`
-          : `<span class="badge-nobody">待认领</span>`}
+        ${whoLine(chore)}
         <span class="dot-sep">·</span>
         <span>${esc(chore.freq_text)}</span>
         ${chore.note ? `<span class="dot-sep">·</span><span>${esc(chore.note)}</span>` : ""}
@@ -259,14 +301,28 @@ function quickAddBar() {
 /* ---------------------------------------------------------- 清单 */
 function viewChores() {
   const filter = S.catFilter;
-  const list = S.chores.filter((c) => filter === "all" || c.category === filter);
+  const role = S.roleFilter;
+
+  // 先按「我和这件事的关系」筛，再按分类分组
+  const list = S.chores.filter((c) => {
+    if (role === "by_me") return isAssignedByMe(c);
+    if (role === "to_me") return isAssignedToMe(c);
+    return true;
+  });
   const grouped = filter === "all"
     ? Object.keys(CATS).map((key) => ({ key, items: list.filter((c) => c.category === key) }))
-    : [{ key: filter, items: list }];
+    : [{ key: filter, items: list.filter((c) => c.category === filter) }];
 
   const tabs = [["all", "全部"], ...Object.entries(CATS).map(([k, v]) => [k, v.label])]
     .map(([k, label]) =>
       `<button class="${filter === k ? "active" : ""}" data-action="cat-tab" data-cat="${k}">${label}</button>`)
+    .join("");
+
+  const byMe = S.chores.filter(isAssignedByMe).length;
+  const toMe = S.chores.filter(isAssignedToMe).length;
+  const roleTabs = [["all", "看全部"], ["by_me", `我派的 ${byMe}`], ["to_me", `派给我的 ${toMe}`]]
+    .map(([k, label]) =>
+      `<button class="${role === k ? "active" : ""}" data-action="role-tab" data-role="${k}">${label}</button>`)
     .join("");
 
   const body = grouped
@@ -284,14 +340,19 @@ function viewChores() {
     })
     .join("");
 
+  const roleEmpty = role === "by_me"
+    ? ["📌", "你还没有派出去过的任务", "想到什么家务，新建时在「谁负责」里选别人就行"]
+    : ["📬", "还没有人派活给你", "家人想到的活儿分到你头上时，会出现在这里"];
+
   return `
   <div class="screen">
     <div class="topbar">
       <h1>家务清单</h1>
-      <div class="sub">把「应该知道」变成「写清楚了」—— ${S.chores.length} 项任务</div>
+      <div class="sub">把「应该知道」变成「写清楚了」—— 共 ${S.chores.length} 项任务</div>
     </div>
 
     <div class="segmented">${tabs}</div>
+    <div class="segmented slim">${roleTabs}</div>
 
     ${S.chores.length === 0
       ? `<div class="empty" style="padding-top:34px">
@@ -302,27 +363,33 @@ function viewChores() {
          <div class="section">
            <button class="btn" data-action="import-presets">一键导入家务模板</button>
          </div>`
-      : `${body}
-         <div class="section" style="display:grid;gap:10px;grid-template-columns:1fr 1fr">
-           <button class="btn ghost small" style="width:100%;padding:13px" data-action="import-presets">导入模板</button>
-           <button class="btn small" style="width:100%;padding:13px" data-action="add-chore">新增家务</button>
+      : body || `<div class="empty" style="padding-top:34px">
+           <span class="em">${roleEmpty[0]}</span>
+           <p>${roleEmpty[1]}</p>
+           <p style="font-size:12.5px">${roleEmpty[2]}</p>
          </div>`}
+
+    ${S.chores.length ? `
+    <div class="section" style="display:grid;gap:10px;grid-template-columns:1fr 1fr">
+      <button class="btn ghost small" style="width:100%;padding:13px" data-action="import-presets">导入模板</button>
+      <button class="btn small" style="width:100%;padding:13px" data-action="add-chore">新增家务</button>
+    </div>` : ""}
   </div>
   ${quickAddBar()}`;
 }
 
 function choreRow(chore) {
-  const who = memberById(chore.assignee_id);
   const cat = CATS[chore.category] || CATS.daily;
+  const proposer = chore.created_by_id ? memberById(chore.created_by_id) : null;
   return `
-  <div class="task cat-${chore.category} ${chore.done ? "done" : ""}">
+  <div class="task cat-${chore.category} ${chore.done ? "done" : ""} ${isAssignedToMe(chore) ? "has-assign" : ""}">
     <div class="check" data-action="toggle" data-id="${chore.id}" data-done="${chore.done}">✓</div>
     <div class="body" data-action="edit-chore" data-id="${chore.id}">
       <div class="title">${esc(chore.title)}</div>
       <div class="sub">
-        ${who
-          ? `<span class="who"><i class="avatar" style="background:${who.color}22">${who.emoji}</i>${esc(who.name)}</span>`
-          : `<span class="badge-nobody">待认领</span>`}
+        ${whoLine(chore)}
+        ${!isAssignedToMe(chore) && !isAssignedByMe(chore) && proposer
+          ? `<span class="dot-sep">·</span><span>${esc(proposer.name)} 提的</span>` : ""}
         <span class="dot-sep">·</span><span>${esc(chore.freq_text)}</span>
         ${!chore.is_active ? `<span class="dot-sep">·</span><span>已暂停</span>` : ""}
       </div>
@@ -353,6 +420,30 @@ function viewStats() {
         </div>
         <div class="rank-track"><i style="width:${(m.points / max) * 100}%;background:${m.color}"></i></div>
         <div class="tag">${m.invisible_done ? `其中隐形家务 ${m.invisible_done} 项` : "暂无隐形家务记录"}</div>
+      </div>
+    </div>`)
+    .join("");
+
+  // 「谁在操心」：提出数排行 —— 想事情的人和做事情的人常常不是同一个人
+  const maxCreated = Math.max(1, ...st.members.map((m) => m.created_count || 0));
+  const creators = st.members
+    .filter((m) => m.member_id !== 0)
+    .slice()
+    .sort((a, b) => (b.created_count || 0) - (a.created_count || 0) || a.member_id - b.member_id)
+    .map((m) => `
+    <div class="rank-row">
+      <i class="avatar lg" style="background:${m.color}22">${m.emoji}</i>
+      <div class="info">
+        <div class="nm">
+          <span>${esc(m.name)}</span>
+          <span>提出 ${m.created_count || 0} 项</span>
+        </div>
+        <div class="rank-track">
+          <i style="width:${((m.created_count || 0) / maxCreated) * 100}%;background:${m.color}"></i>
+        </div>
+        <div class="tag">${m.assigned_out
+          ? `其中 ${m.assigned_out} 项派给了别人`
+          : (m.created_count ? "想到的都自己收着做" : "还没有提出过任务")}</div>
       </div>
     </div>`)
     .join("");
@@ -398,6 +489,19 @@ function viewStats() {
       <div class="card">${rows || '<p style="color:#8a85a3;font-size:13px;margin:0">还没有成员</p>'}</div>
       <div class="fairness-note">
         <b>公平度 ${fair}%</b> —— ${verdict}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>谁在操心</h2>
+        <span class="count">共提出 ${st.total_created} 项</span>
+      </div>
+      <div class="card">${creators || '<p style="color:#8a85a3;font-size:13px;margin:0">还没有成员</p>'}</div>
+      <div class="fairness-note">
+        「提出」指的是谁想到并记下了这件事 —— 这部分脑力活过去完全不计分，
+        却是家务里最累人的一块。提出得多、又大多自己收着做的人，
+        往往就是家里那个「总在惦记」的人。
       </div>
     </div>
 
@@ -486,7 +590,7 @@ function viewFamily() {
     <div class="section">
       <button class="btn line" data-action="logout">退出这个家庭（本机）</button>
       <p style="text-align:center;font-size:11.5px;color:#a49fbb;margin:16px 0 0">
-        分担 FenDan v0.1 · 把模糊的家务变成清晰的任务
+        分担 FenDan v0.2 · 把模糊的家务变成清晰的任务
       </p>
     </div>
   </div>`;
@@ -605,15 +709,17 @@ function sheetChore(chore = null) {
   const isEdit = !!chore;
   const c = chore || {
     title: "", category: "daily", freq: "daily", weekday: 5, monthday: 1,
-    points: 2, note: "", assignee_id: null,
+    points: 2, note: "", created_by_id: S.session?.memberId ?? null, assignee_id: null,
   };
   const members = S.household.members;
+  // 新建时默认「我想到的」，编辑时用已有值
+  const proposerId = isEdit ? (c.created_by_id ?? null) : (c.created_by_id ?? null);
 
   openSheet(`
     <h3>${isEdit ? "编辑任务" : "新增家务"}</h3>
     <p class="desc">${isEdit
-      ? "改完记得保存。负责人的调整会让这项任务的责任重新归属。"
-      : "写得越具体，家里越不会扯皮。比如「洗碗」比「收拾厨房」清楚得多。"}</p>
+      ? "改完记得保存。换负责人就是把这项责任转给别人 —— 改派不影响「谁提的」。"
+      : "写得越具体，家里越不会扯皮。想到什么活，顺手选好负责人，就算派到位了。"}</p>
 
     <div class="field">
       <label>任务名称</label>
@@ -665,12 +771,27 @@ function sheetChore(chore = null) {
     </div>
 
     <div class="field">
+      <label>谁想到的（提出人）</label>
+      <div class="chip-row" id="c-proposer">
+        ${members.map((m) =>
+          `<button class="chip ${proposerId === m.id ? "active" : ""}" data-val="${m.id}">${m.emoji} ${esc(m.name)}${m.id === S.session?.memberId ? "（我）" : ""}</button>`).join("")}
+        <button class="chip ${!proposerId ? "active" : ""}" data-val="">不指定</button>
+      </div>
+      <p style="font-size:11.5px;color:#8a85a3;line-height:1.6;margin:8px 2px 0">
+        「记着要做这件事」本身就是一件家务。写下来，谁在操心就看得见了。
+      </p>
+    </div>
+
+    <div class="field">
       <label>谁负责（责任整卡制：一件事只归一个人）</label>
       <div class="chip-row" id="c-assignee">
         <button class="chip ${!c.assignee_id ? "active" : ""}" data-val="">暂不分配</button>
         ${members.map((m) =>
-          `<button class="chip ${c.assignee_id === m.id ? "active" : ""}" data-val="${m.id}">${m.emoji} ${esc(m.name)}</button>`).join("")}
+          `<button class="chip ${c.assignee_id === m.id ? "active" : ""}" data-val="${m.id}">${m.emoji} ${esc(m.name)}${m.id === S.session?.memberId ? "（我）" : ""}</button>`).join("")}
       </div>
+      <p style="font-size:11.5px;color:#8a85a3;line-height:1.6;margin:8px 2px 0">
+        可以选家里任何一个人。选了别人，这项任务就会出现在他的「今日」最前面。
+      </p>
     </div>
 
     <div class="field">
@@ -699,7 +820,7 @@ function syncFreqVisibility() {
 }
 
 function bindChipGroups() {
-  ["c-category", "c-freq", "c-weekday", "c-monthday", "c-points", "c-assignee"].forEach((id) => {
+  ["c-category", "c-freq", "c-weekday", "c-monthday", "c-points", "c-proposer", "c-assignee"].forEach((id) => {
     const box = document.getElementById(id);
     if (!box) return;
     box.addEventListener("click", (e) => {
@@ -838,6 +959,7 @@ document.addEventListener("click", async (e) => {
       case "nav": await switchScreen(target.dataset.screen); break;
       case "pick-day": S.selectedDay = target.dataset.day; S.screen = "today"; await refresh(); break;
       case "cat-tab": S.catFilter = target.dataset.cat; await loadChores(); render(); break;
+      case "role-tab": S.roleFilter = target.dataset.role; render(); break;
       case "scope": S.statsScope = target.dataset.scope; await loadStats(); render(); break;
 
       /* 打卡 */
@@ -926,7 +1048,7 @@ document.addEventListener("click", async (e) => {
         const keys = [...sheetPanel.querySelectorAll(".switch.on")].map((s) => s.dataset.key);
         if (!keys.length) return toast("还没有选择任何模板");
         const res = await request(`/api/households/${S.session.code}/chores/import`, {
-          method: "POST", body: { keys },
+          method: "POST", body: { keys, created_by_id: S.session.memberId },
         });
         closeSheet();
         await refresh();
@@ -1020,6 +1142,7 @@ function collectChoreForm() {
       : Number($("#c-monthday .chip.active")?.dataset.val ?? 1);
   }
   const assigneeRaw = $("#c-assignee .chip.active")?.dataset.val || "";
+  const proposerRaw = $("#c-proposer .chip.active")?.dataset.val || "";
   return {
     title,
     category: $("#c-category .chip.active")?.dataset.val || "daily",
@@ -1027,8 +1150,11 @@ function collectChoreForm() {
     weekday,
     monthday,
     points: Number($("#c-points .chip.active")?.dataset.val || 2),
+    created_by_id: proposerRaw ? Number(proposerRaw) : null,
     assignee_id: assigneeRaw ? Number(assigneeRaw) : null,
-    clear_assignee: false,
+    // 选了「不指定 / 暂不分配」就是明确要清空 —— 否则 PATCH 会把它当成「没改」
+    clear_created_by: !proposerRaw,
+    clear_assignee: !assigneeRaw,
     note: $("#c-note").value.trim(),
   };
 }

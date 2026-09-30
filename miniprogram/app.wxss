@@ -1,0 +1,282 @@
+/* ============================================================
+   分担 FenDan · 小程序全局样式
+   ============================================================ */
+page {
+  background: #f4f2fa;
+  color: #1b1830;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+  font-size: 28rpx;
+  line-height: 1.5;
+}
+
+view, text, button, input, textarea {
+  box-sizing: border-box;
+}
+
+/* ---------------- 通用容器 ---------------- */
+.page {
+  min-height: 100vh;
+  padding-bottom: 60rpx;
+}
+
+.section {
+  padding: 0 32rpx;
+  margin-top: 36rpx;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18rpx;
+}
+
+.section-head .title {
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.section-head .count {
+  font-size: 23rpx;
+  color: #8a85a3;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 32rpx;
+  padding: 30rpx;
+  box-shadow: 0 8rpx 30rpx rgba(87, 70, 160, 0.07);
+}
+
+/* ---------------- 按钮 ---------------- */
+.btn {
+  width: 100%;
+  border: 0;
+  border-radius: 26rpx;
+  padding: 26rpx 0;
+  font-size: 30rpx;
+  font-weight: 600;
+  line-height: 1.4;
+  background: #7c5cff;
+  color: #ffffff;
+}
+.btn::after { border: 0; }
+.btn.ghost { background: #f1ecff; color: #6344e8; }
+.btn.line { background: transparent; color: #6344e8; border: 2rpx solid #e4dcff; }
+.btn.danger { background: #ffeaec; color: #ff5f6d; }
+.btn[disabled] { opacity: 0.5; }
+
+/* ---------------- 头像 ---------------- */
+.avatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  background: #f0eef8;
+  flex-shrink: 0;
+}
+.avatar.sm { width: 40rpx; height: 40rpx; font-size: 22rpx; }
+.avatar.lg { width: 84rpx; height: 84rpx; font-size: 42rpx; }
+
+/* ---------------- 任务卡 ---------------- */
+.task {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 26rpx 26rpx;
+  border-radius: 28rpx;
+  border: 2rpx solid transparent;
+  margin-bottom: 18rpx;
+}
+.task.cat-daily { background: #fff4e2; border-color: #ffe3b8; }
+.task.cat-cycle { background: #e4f4fe; border-color: #cceaf9; }
+.task.cat-invisible { background: #f3e9ff; border-color: #e4d3ff; }
+
+.task .check {
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 50%;
+  border: 3rpx solid rgba(27, 24, 48, 0.16);
+  background: rgba(255, 255, 255, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  color: transparent;
+  flex-shrink: 0;
+  margin-right: 22rpx;
+}
+.task.done .check {
+  background: #7c5cff;
+  border-color: #7c5cff;
+  color: #ffffff;
+}
+
+.task .body { flex: 1; min-width: 0; }
+
+.task .task-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.task.done .task-title {
+  text-decoration: line-through;
+  color: rgba(27, 24, 48, 0.45);
+}
+
+.task .task-sub {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 10rpx;
+  font-size: 23rpx;
+  color: rgba(27, 24, 48, 0.55);
+}
+.task .task-sub .sep { margin: 0 10rpx; opacity: 0.4; }
+
+.task .pts {
+  flex-shrink: 0;
+  font-size: 23rpx;
+  font-weight: 700;
+  padding: 6rpx 16rpx;
+  border-radius: 16rpx;
+  background: rgba(255, 255, 255, 0.8);
+  color: rgba(27, 24, 48, 0.6);
+  margin-left: 16rpx;
+}
+
+.badge-nobody {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #d4380d;
+  background: #fff1e8;
+  padding: 4rpx 14rpx;
+  border-radius: 14rpx;
+}
+
+/* ---------------- 空状态 ---------------- */
+.empty {
+  padding: 90rpx 40rpx;
+  text-align: center;
+  color: #8a85a3;
+}
+.empty .em { font-size: 76rpx; display: block; margin-bottom: 20rpx; }
+.empty .line { font-size: 28rpx; }
+.empty .hint { font-size: 24rpx; margin-top: 8rpx; color: #a49fbb; }
+
+/* ---------------- 分段控件 ---------------- */
+.segmented {
+  display: flex;
+  background: #ebe7f7;
+  border-radius: 26rpx;
+  padding: 6rpx;
+  margin: 0 32rpx;
+}
+.segmented .item {
+  flex: 1;
+  text-align: center;
+  padding: 18rpx 0;
+  border-radius: 20rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #6f6a8c;
+}
+.segmented .item.active {
+  background: #ffffff;
+  color: #6344e8;
+  box-shadow: 0 4rpx 14rpx rgba(87, 70, 160, 0.12);
+}
+
+/* ---------------- 表单 ---------------- */
+.field { margin-bottom: 28rpx; }
+.field .label {
+  display: block;
+  font-size: 25rpx;
+  font-weight: 600;
+  color: #5c577a;
+  margin-bottom: 14rpx;
+}
+.field .input,
+.field .textarea {
+  width: 100%;
+  background: #faf9fe;
+  border: 2rpx solid #ece9f6;
+  border-radius: 24rpx;
+  padding: 24rpx 26rpx;
+  font-size: 30rpx;
+  color: #1b1830;
+}
+.field .textarea { min-height: 130rpx; }
+
+.chips { display: flex; flex-wrap: wrap; }
+.chip {
+  border: 2rpx solid #ece9f6;
+  background: #faf9fe;
+  border-radius: 22rpx;
+  padding: 16rpx 24rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #5c577a;
+  margin: 0 14rpx 14rpx 0;
+}
+.chip.active {
+  background: #7c5cff;
+  border-color: #7c5cff;
+  color: #ffffff;
+}
+.chip.emoji { font-size: 38rpx; padding: 10rpx 20rpx; }
+.chip.ghost-chip { padding: 12rpx 22rpx; font-size: 24rpx; }
+
+.mt { margin-top: 22rpx; }
+
+/* ---------------- 弹层 ---------------- */
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(24, 20, 45, 0.42);
+  z-index: 90;
+  display: flex;
+  align-items: flex-end;
+}
+.sheet {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 40rpx 40rpx 0 0;
+  padding: 12rpx 32rpx 48rpx;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+.sheet .grab {
+  width: 80rpx;
+  height: 8rpx;
+  border-radius: 6rpx;
+  background: #ddd8ee;
+  margin: 14rpx auto 30rpx;
+}
+.sheet .sheet-title { font-size: 36rpx; font-weight: 700; }
+.sheet .sheet-desc {
+  font-size: 25rpx;
+  color: #8a85a3;
+  margin: 10rpx 0 32rpx;
+}
+
+/* ---------------- 进度条 ---------------- */
+.bar {
+  height: 16rpx;
+  border-radius: 10rpx;
+  background: #f0eef8;
+  overflow: hidden;
+}
+.bar .fill {
+  height: 100%;
+  border-radius: 10rpx;
+  background: #7c5cff;
+}

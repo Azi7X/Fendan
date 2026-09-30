@@ -1,0 +1,121 @@
+.head { padding: 30rpx 32rpx 26rpx; }
+.head-title {
+  display: block;
+  font-size: 44rpx;
+  font-weight: 800;
+}
+.head-sub {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #8a85a3;
+}
+
+/* ---------------- 三个总量 ---------------- */
+.stat-grid { display: flex; }
+.stat-box {
+  flex: 1;
+  background: #ffffff;
+  border-radius: 28rpx;
+  padding: 30rpx 10rpx;
+  text-align: center;
+  box-shadow: 0 8rpx 30rpx rgba(87, 70, 160, 0.07);
+}
+.stat-box + .stat-box { margin-left: 18rpx; }
+.stat-num {
+  display: block;
+  font-size: 46rpx;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.stat-label {
+  display: block;
+  font-size: 22rpx;
+  color: #8a85a3;
+  margin-top: 10rpx;
+}
+
+/* ---------------- 排行 ---------------- */
+.rank-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 22rpx 0;
+}
+.rank-row:first-child { padding-top: 0; }
+.rank-row:last-child { padding-bottom: 0; }
+
+.rank-info { flex: 1; margin-left: 22rpx; min-width: 0; }
+.rank-name {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.rank-name .nm { font-size: 29rpx; font-weight: 600; }
+.rank-name .sc { font-size: 23rpx; color: #8a85a3; }
+
+.rank-row .bar {
+  height: 18rpx;
+  margin-top: 12rpx;
+}
+.rank-tag {
+  display: block;
+  font-size: 22rpx;
+  color: #a49fbb;
+  margin-top: 10rpx;
+}
+
+.fairness-note {
+  margin-top: 24rpx;
+  background: #f1ecff;
+  border-radius: 24rpx;
+  padding: 24rpx 28rpx;
+  font-size: 25rpx;
+  line-height: 1.7;
+  color: #6b6688;
+}
+.fn-strong { font-weight: 700; color: #6344e8; }
+
+/* ---------------- 隐形家务 ---------------- */
+.fill.invisible {
+  background: linear-gradient(90deg, #a96bff, #7c5cff);
+}
+.invisible-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20rpx;
+  font-size: 24rpx;
+  color: #6b6688;
+}
+.invisible-note {
+  margin-top: 20rpx;
+  font-size: 23rpx;
+  line-height: 1.7;
+  color: #8a85a3;
+}
+
+/* ---------------- 趋势 ---------------- */
+.trend {
+  display: flex;
+  align-items: flex-end;
+  height: 190rpx;
+}
+.trend .col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+}
+.colbar {
+  width: 36rpx;
+  border-radius: 14rpx 14rpx 8rpx 8rpx;
+  background: linear-gradient(180deg, #a98cff, #7c5cff);
+  transition: height 0.4s ease;
+}
+.colbar.zero { background: #e6e2f4; }
+.collabel {
+  font-size: 20rpx;
+  color: #8a85a3;
+  margin-top: 14rpx;
+}

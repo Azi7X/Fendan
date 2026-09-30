@@ -1,0 +1,127 @@
+/* ---------------- 周条 ---------------- */
+.weekstrip {
+  display: flex;
+  padding: 26rpx 20rpx 10rpx;
+}
+
+.day-chip {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14rpx 0 16rpx;
+  border-radius: 24rpx;
+  margin: 0 4rpx;
+}
+.day-chip .wd {
+  font-size: 22rpx;
+  color: #8a85a3;
+}
+.day-chip .dn {
+  font-size: 32rpx;
+  font-weight: 700;
+  margin-top: 6rpx;
+}
+.day-chip .dot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  background: #f5a623;
+  margin-top: 10rpx;
+}
+.day-chip .dot.off { background: transparent; }
+
+.day-chip.today .dn { color: #7c5cff; }
+
+.day-chip.active { background: #7c5cff; }
+.day-chip.active .wd,
+.day-chip.active .dn { color: #ffffff; }
+.day-chip.active .dot { background: rgba(255, 255, 255, 0.9); }
+.day-chip.active .dot.off { background: transparent; }
+
+/* ---------------- 完成度卡 ---------------- */
+.progress-card {
+  margin: 20rpx 32rpx 0;
+  padding: 34rpx 34rpx 30rpx;
+  border-radius: 40rpx;
+  background: linear-gradient(135deg, #7c5cff, #9b7bff);
+  color: #ffffff;
+  box-shadow: 0 20rpx 44rpx rgba(124, 92, 255, 0.28);
+}
+.prow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.pleft { flex: 1; padding-right: 20rpx; }
+.plabel {
+  display: block;
+  font-size: 24rpx;
+  opacity: 0.82;
+}
+.pverdict {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 700;
+  margin-top: 10rpx;
+  line-height: 1.4;
+}
+.pratio { display: flex; align-items: baseline; }
+.pratio .big {
+  font-size: 62rpx;
+  font-weight: 800;
+  line-height: 1;
+}
+.pratio .small {
+  font-size: 26rpx;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.pbar {
+  height: 14rpx;
+  border-radius: 8rpx;
+  background: rgba(255, 255, 255, 0.28);
+  margin-top: 28rpx;
+  overflow: hidden;
+}
+.pfill {
+  height: 100%;
+  border-radius: 8rpx;
+  background: #ffffff;
+  transition: width 0.4s ease;
+}
+
+.pmeta {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 22rpx;
+  font-size: 23rpx;
+  opacity: 0.94;
+}
+.pmeta text { margin-right: 26rpx; }
+
+/* ---------------- 任务补充样式 ---------------- */
+.task-sub .who { margin-left: 10rpx; }
+
+/* ---------------- 快速添加 ---------------- */
+.quick-wrap { padding: 44rpx 32rpx 20rpx; }
+
+.quick {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(100deg, #7c5cff, #9d7cff);
+  border: 0;
+  border-radius: 34rpx;
+  padding: 30rpx 34rpx;
+  box-shadow: 0 16rpx 36rpx rgba(124, 92, 255, 0.32);
+}
+.quick::after { border: 0; }
+.quick-text {
+  font-size: 29rpx;
+  font-weight: 600;
+  color: #ffffff;
+}
+.quick-ic { font-size: 34rpx; }

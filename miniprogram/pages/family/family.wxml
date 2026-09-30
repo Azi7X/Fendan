@@ -1,0 +1,99 @@
+<view class="page">
+
+  <view class="head">
+    <text class="head-title">{{householdName}}</text>
+    <text class="head-sub">{{members.length}} 位成员 · 让每个人清楚自己的责任</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="empty">
+    <text class="em">⏳</text>
+    <text class="line">正在加载…</text>
+  </view>
+
+  <view wx:elif="{{error}}" class="empty">
+    <text class="em">😕</text>
+    <text class="line">{{error}}</text>
+  </view>
+
+  <block wx:else>
+    <!-- 邀请码 -->
+    <view class="section">
+      <view class="invite-box">
+        <text class="invite-tip">把这个邀请码发给家人，一起进来分工</text>
+        <text class="invite-code">{{inviteCode}}</text>
+        <text class="invite-hint">对方在小程序里输邀请码即可加入</text>
+        <button class="btn invite-btn" bindtap="copyCode">复制邀请码</button>
+      </view>
+    </view>
+
+    <!-- 成员 -->
+    <view class="section">
+      <view class="section-head">
+        <text class="title">家庭成员</text>
+        <text class="count">{{members.length}} 人</text>
+      </view>
+      <view class="card">
+        <view wx:for="{{members}}" wx:key="id" class="member-row">
+          <view class="avatar lg" style="background:{{item.color}}22">{{item.emoji}}</view>
+          <view class="member-info">
+            <text class="member-name">{{item.name}}{{item.isMe ? ' · 我' : ''}}</text>
+            <text class="member-role">{{item.role}}</text>
+          </view>
+          <view wx:if="{{item.isMe}}" class="chip ghost-chip" bindtap="openRenameMe">改名</view>
+        </view>
+      </view>
+      <button class="btn ghost mt" bindtap="openRenameHousehold">修改家庭名称</button>
+    </view>
+
+    <!-- 分工工具 -->
+    <view class="section">
+      <view class="section-head">
+        <text class="title">分工工具</text>
+        <text class="count" wx:if="{{unassignedCount}}">{{unassignedCount}} 项待认领</text>
+      </view>
+      <button class="btn ghost" bindtap="autoAssign" loading="{{busy}}" disabled="{{busy}}">
+        ⚖️ 自动均衡分配待认领任务
+      </button>
+      <button class="btn ghost mt" bindtap="goChores">📋 去清单补充家务</button>
+      <view class="tool-note">
+        自动分配会按每位成员当前的积分负载，把还没人认领的任务派给最轻的那个人 —— 不是按性别，也不是按谁有空。
+      </view>
+    </view>
+
+    <view class="section">
+      <button class="btn line" bindtap="handleSignOut">退出这个家庭</button>
+      <view class="version">分担 v0.1 · 把模糊的家务变成清晰的任务</view>
+    </view>
+  </block>
+
+  <!-- 改名弹层 -->
+  <view wx:if="{{sheet}}" class="mask" bindtap="closeSheet">
+    <view class="sheet" catchtap="noop">
+      <view class="grab"></view>
+      <view class="sheet-title">{{sheet === 'household' ? '修改家庭名称' : '修改我的名字'}}</view>
+      <view class="sheet-desc">{{sheet === 'household' ? '这个名字会显示在所有家庭成员的首页上。' : '家里人看到的就是这个名字。'}}</view>
+
+      <view class="field">
+        <text class="label">{{sheet === 'household' ? '家庭名称' : '你的名字'}}</text>
+        <input class="input" value="{{renameValue}}" maxlength="24" bindinput="onRenameInput" />
+      </view>
+
+      <view class="field" wx:if="{{sheet === 'me'}}">
+        <text class="label">选个头像</text>
+        <view class="chips">
+          <view
+            wx:for="{{emojis}}"
+            wx:key="*this"
+            class="chip emoji {{renameEmoji === item ? 'active' : ''}}"
+            data-emoji="{{item}}"
+            bindtap="pickEmoji"
+          >{{item}}</view>
+        </view>
+      </view>
+
+      <button class="btn" bindtap="saveRename" loading="{{busy}}" disabled="{{busy}}">保存</button>
+      <button class="btn line mt" bindtap="closeSheet">取消</button>
+    </view>
+  </view>
+
+</view>

@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "家务清单",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark",
+  "usingComponents": {}
+}

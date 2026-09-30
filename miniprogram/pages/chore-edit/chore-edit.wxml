@@ -1,0 +1,120 @@
+<view class="page">
+
+  <view wx:if="{{!ready}}" class="empty">
+    <text class="em">⏳</text>
+    <text class="line">正在加载…</text>
+  </view>
+
+  <block wx:else>
+    <view class="intro">
+      <text class="intro-title">{{isEdit ? '编辑这项任务' : '新增一件家务'}}</text>
+      <text class="intro-desc">写得越具体，家里越不会扯皮。比如「洗碗」比「收拾厨房」清楚得多。</text>
+    </view>
+
+    <view class="section">
+      <view class="field">
+        <text class="label">任务名称</text>
+        <input class="input" value="{{title}}" maxlength="40" bindinput="onTitle" placeholder="比如：洗碗、换洗床单、约空调维修" />
+      </view>
+
+      <view class="field">
+        <text class="label">属于哪一类</text>
+        <view class="chips">
+          <view
+            wx:for="{{categories}}"
+            wx:key="value"
+            class="chip {{category === item.value ? 'active' : ''}}"
+            data-value="{{item.value}}"
+            bindtap="pickCategory"
+          >{{item.label}}</view>
+        </view>
+      </view>
+
+      <view class="field">
+        <text class="label">多久做一次</text>
+        <view class="chips">
+          <view
+            wx:for="{{freqs}}"
+            wx:key="value"
+            class="chip {{freq === item.value ? 'active' : ''}}"
+            data-value="{{item.value}}"
+            bindtap="pickFreq"
+          >{{item.label}}</view>
+        </view>
+      </view>
+
+      <view class="field" wx:if="{{freq === 'weekly'}}">
+        <text class="label">安排在周几</text>
+        <view class="chips">
+          <view
+            wx:for="{{weekdays}}"
+            wx:key="value"
+            class="chip {{weekday === item.value ? 'active' : ''}}"
+            data-value="{{item.value}}"
+            bindtap="pickWeekday"
+          >{{item.label}}</view>
+        </view>
+      </view>
+
+      <view class="field" wx:if="{{freq === 'monthly'}}">
+        <text class="label">安排在每月几号</text>
+        <view class="chips">
+          <view
+            wx:for="{{monthdays}}"
+            wx:key="*this"
+            class="chip {{monthday === item && !monthdayCustom ? 'active' : ''}}"
+            data-value="{{item}}"
+            bindtap="pickMonthday"
+          >{{item}} 号</view>
+        </view>
+        <input class="input custom-day" type="number" value="{{monthdayCustom}}" maxlength="2" bindinput="onMonthdayCustom" placeholder="或自定义 1-31" />
+      </view>
+
+      <view class="field">
+        <text class="label">工作量（积分越高代表越累）</text>
+        <view class="chips">
+          <view
+            wx:for="{{pointOptions}}"
+            wx:key="*this"
+            class="chip {{points === item ? 'active' : ''}}"
+            data-value="{{item}}"
+            bindtap="pickPoints"
+          >{{item}} 分</view>
+        </view>
+      </view>
+
+      <view class="field">
+        <text class="label">谁负责（责任整卡制：一件事只归一个人）</text>
+        <view class="chips">
+          <view class="chip {{assigneeId === 0 ? 'active' : ''}}" data-value="0" bindtap="pickAssignee">暂不分配</view>
+          <view
+            wx:for="{{members}}"
+            wx:key="id"
+            class="chip {{assigneeId === item.id ? 'active' : ''}}"
+            data-value="{{item.id}}"
+            bindtap="pickAssignee"
+          >{{item.label}}</view>
+        </view>
+      </view>
+
+      <view class="field">
+        <text class="label">备注（可选）</text>
+        <textarea class="textarea" value="{{note}}" maxlength="120" bindinput="onNote" placeholder="补充说明，比如「含备菜」「记得看保质期」" />
+      </view>
+    </view>
+
+    <view class="section">
+      <button class="btn" bindtap="save" loading="{{busy}}" disabled="{{busy}}">
+        {{isEdit ? '保存修改' : '添加到清单'}}
+      </button>
+
+      <block wx:if="{{isEdit}}">
+        <view class="row-actions">
+          <button class="btn ghost half" bindtap="toggleActive">{{isActive ? '暂停这项' : '恢复这项'}}</button>
+          <button class="btn danger half" bindtap="remove">删除任务</button>
+        </view>
+      </block>
+    </view>
+  </block>
+
+</view>

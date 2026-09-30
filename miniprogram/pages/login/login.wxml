@@ -1,0 +1,133 @@
+<view class="login-page">
+
+  <!-- 启动中 -->
+  <view wx:if="{{stage === 'checking'}}" class="center">
+    <text class="brand-emoji">🧺</text>
+    <text class="center-text">正在进入…</text>
+  </view>
+
+  <!-- 未登录：微信一键登录 -->
+  <block wx:elif="{{stage === 'login'}}">
+    <view class="hero">
+      <view class="brand-mark"><text>🧺</text></view>
+      <view class="hero-title">让家务<text class="hl">看得见</text></view>
+      <view class="hero-title">让分担<text class="hl">有据可依</text></view>
+      <view class="hero-lead">
+        家务分工最大的敌人不是偷懒，而是「谁在记着这件事」。
+        分担把家里所有活写清楚，把每件事的责任整卡交给一个人 —— 从此不需要唠叨。
+      </view>
+    </view>
+
+    <view class="facts">
+      <view class="fact">
+        <text class="fact-ic">📝</text>
+        <view class="fact-body">
+          <text class="fact-t">三类清单，一个不漏</text>
+          <text class="fact-d">日常家务 / 周期性家务 / 隐形家务，把脑力活也显性化</text>
+        </view>
+      </view>
+      <view class="fact">
+        <text class="fact-ic">🤝</text>
+        <view class="fact-body">
+          <text class="fact-t">责任整卡制</text>
+          <text class="fact-d">一项任务从「想到」到「做完」全归一个人，另一方不当监工</text>
+        </view>
+      </view>
+      <view class="fact">
+        <text class="fact-ic">📊</text>
+        <view class="fact-body">
+          <text class="fact-t">公平度看得见</text>
+          <text class="fact-d">谁做了多少自动统计，包括那些不被看见的隐形付出</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="actions">
+      <button class="btn" bindtap="handleLogin" loading="{{busy}}" disabled="{{busy}}">
+        {{busy ? '正在登录…' : '微信一键登录'}}
+      </button>
+      <view class="error" wx:if="{{error}}">{{error}}</view>
+      <view class="tip">用微信身份登录，家里人各自登录后共用一个家庭空间</view>
+    </view>
+  </block>
+
+  <!-- 已登录但没有家庭 -->
+  <block wx:elif="{{stage === 'choice'}}">
+    <view class="hero small">
+      <view class="brand-mark"><text>🏠</text></view>
+      <view class="hero-title">先把家建起来</view>
+      <view class="hero-lead">创建一个新家庭并拿到邀请码，或者用家人发你的邀请码加入。</view>
+    </view>
+    <view class="actions">
+      <button class="btn" data-stage="create" bindtap="toggleStage">创建我的家庭</button>
+      <button class="btn ghost" data-stage="join" bindtap="toggleStage">我有邀请码，加入家庭</button>
+    </view>
+  </block>
+
+  <!-- 创建家庭 -->
+  <block wx:elif="{{stage === 'create'}}">
+    <view class="form-title">创建我的家庭</view>
+    <view class="form-desc">先建一个家庭空间，拿到邀请码后再把家人叫进来。</view>
+
+    <view class="field">
+      <text class="label">家庭名称</text>
+      <input class="input" value="{{householdName}}" maxlength="24" bindinput="onHouseholdName" placeholder="比如：幸福一家" />
+    </view>
+
+    <view class="field">
+      <text class="label">你的名字</text>
+      <input class="input" value="{{myName}}" maxlength="16" bindinput="onMyName" placeholder="家人平时怎么叫你" />
+    </view>
+
+    <view class="field">
+      <text class="label">选个头像</text>
+      <view class="chips">
+        <view
+          wx:for="{{emojis}}"
+          wx:key="*this"
+          class="chip emoji {{emoji === item ? 'active' : ''}}"
+          data-emoji="{{item}}"
+          bindtap="pickEmoji"
+        >{{item}}</view>
+      </view>
+    </view>
+
+    <view class="error" wx:if="{{error}}">{{error}}</view>
+    <button class="btn" bindtap="handleCreate" loading="{{busy}}" disabled="{{busy}}">创建家庭</button>
+    <button class="btn line mt" data-stage="choice" bindtap="toggleStage">返回</button>
+  </block>
+
+  <!-- 加入家庭 -->
+  <block wx:elif="{{stage === 'join'}}">
+    <view class="form-title">加入家庭</view>
+    <view class="form-desc">输入家人给你的 6 位邀请码，再写下你怎么称呼自己。</view>
+
+    <view class="field">
+      <text class="label">邀请码</text>
+      <input class="input code-input" value="{{inviteCode}}" maxlength="6" bindinput="onInviteCode" placeholder="例如 K7M2QP" />
+    </view>
+
+    <view class="field">
+      <text class="label">你的名字</text>
+      <input class="input" value="{{myName}}" maxlength="16" bindinput="onMyName" placeholder="家人平时怎么叫你" />
+    </view>
+
+    <view class="field">
+      <text class="label">选个头像</text>
+      <view class="chips">
+        <view
+          wx:for="{{emojis}}"
+          wx:key="*this"
+          class="chip emoji {{emoji === item ? 'active' : ''}}"
+          data-emoji="{{item}}"
+          bindtap="pickEmoji"
+        >{{item}}</view>
+      </view>
+    </view>
+
+    <view class="error" wx:if="{{error}}">{{error}}</view>
+    <button class="btn" bindtap="handleJoin" loading="{{busy}}" disabled="{{busy}}">加入家庭</button>
+    <button class="btn line mt" data-stage="choice" bindtap="toggleStage">返回</button>
+  </block>
+
+</view>

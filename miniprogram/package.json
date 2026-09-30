@@ -1,0 +1,9 @@
+{
+  "name": "fendan-chores",
+  "version": "0.1.0",
+  "private": true,
+  "description": "分担 · 家庭家务分工小程序",
+  "dependencies": {
+    "@tencent-ai/workbuddy-cloud-sdk": "dev"
+  }
+}

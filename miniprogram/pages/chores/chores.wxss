@@ -1,0 +1,95 @@
+.head {
+  padding: 30rpx 32rpx 26rpx;
+}
+.head-title {
+  display: block;
+  font-size: 44rpx;
+  font-weight: 800;
+  letter-spacing: -0.5rpx;
+}
+.head-sub {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #8a85a3;
+  line-height: 1.6;
+}
+
+.bottom-actions {
+  display: flex;
+  margin-top: 40rpx;
+}
+.half { flex: 1; }
+.half + .half { margin-left: 20rpx; }
+
+/* ---------------- 模板导入 ---------------- */
+.import-group {
+  border: 2rpx solid #ece9f6;
+  border-radius: 26rpx;
+  padding: 24rpx 26rpx 8rpx;
+  margin-bottom: 26rpx;
+}
+.import-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.import-label {
+  font-size: 28rpx;
+  font-weight: 700;
+}
+.import-all {
+  font-size: 23rpx;
+  color: #7c5cff;
+  font-weight: 600;
+  padding: 6rpx 18rpx;
+  background: #f1ecff;
+  border-radius: 16rpx;
+}
+.import-desc {
+  font-size: 23rpx;
+  color: #a49fbb;
+  margin: 8rpx 0 16rpx;
+}
+
+.preset-row {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 0;
+  border-bottom: 2rpx solid #f2f0f9;
+}
+.preset-row:last-child { border-bottom: 0; }
+.preset-row.off { opacity: 0.42; }
+
+.preset-main { flex: 1; min-width: 0; }
+.preset-title {
+  display: block;
+  font-size: 28rpx;
+}
+.preset-meta {
+  display: block;
+  font-size: 22rpx;
+  color: #a49fbb;
+  margin-top: 6rpx;
+}
+
+.preset-box {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 14rpx;
+  border: 3rpx solid #ddd8ee;
+  background: #faf9fe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: transparent;
+  flex-shrink: 0;
+  margin-left: 20rpx;
+}
+.preset-box.on {
+  background: #7c5cff;
+  border-color: #7c5cff;
+  color: #ffffff;
+}

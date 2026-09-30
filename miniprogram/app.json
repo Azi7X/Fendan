@@ -1,0 +1,32 @@
+{
+  "pages": [
+    "pages/login/login",
+    "pages/today/today",
+    "pages/chores/chores",
+    "pages/stats/stats",
+    "pages/family/family",
+    "pages/chore-edit/chore-edit"
+  ],
+  "window": {
+    "backgroundTextStyle": "dark",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "navigationBarTitleText": "分担",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#F4F2FA"
+  },
+  "tabBar": {
+    "color": "#A49FBB",
+    "selectedColor": "#7C5CFF",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/today/today", "text": "今日" },
+      { "pagePath": "pages/chores/chores", "text": "清单" },
+      { "pagePath": "pages/stats/stats", "text": "统计" },
+      { "pagePath": "pages/family/family", "text": "家庭" }
+    ]
+  },
+  "lazyCodeLoading": "requiredComponents",
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

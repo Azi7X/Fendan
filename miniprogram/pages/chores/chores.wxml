@@ -1,0 +1,122 @@
+<view class="page">
+
+  <view class="head">
+    <text class="head-title">家务清单</text>
+    <text class="head-sub">把「应该知道」变成「写清楚了」—— 共 {{totalCount}} 项 · {{totalPoints}} 分</text>
+  </view>
+
+  <view class="segmented">
+    <view
+      wx:for="{{filters}}"
+      wx:key="key"
+      class="item {{filter === item.key ? 'active' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="setFilter"
+    >{{item.label}}</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="empty">
+    <text class="em">⏳</text>
+    <text class="line">正在加载…</text>
+  </view>
+
+  <view wx:elif="{{error}}" class="empty">
+    <text class="em">😕</text>
+    <text class="line">{{error}}</text>
+  </view>
+
+  <block wx:elif="{{totalCount === 0}}">
+    <view class="empty">
+      <text class="em">📝</text>
+      <text class="line">清单还是空的</text>
+      <text class="hint">先一键导入一套家务模板，再按家里的情况改</text>
+    </view>
+    <view class="section">
+      <button class="btn" bindtap="openImport">一键导入家务模板</button>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view wx:for="{{groups}}" wx:for-item="group" wx:key="key" class="section">
+      <view class="section-head">
+        <text class="title">{{group.icon}} {{group.label}}</text>
+        <text class="count">{{group.count}} 项 · 共 {{group.points}} 分</text>
+      </view>
+
+      <view
+        wx:for="{{group.items}}"
+        wx:for-item="chore"
+        wx:key="id"
+        class="task cat-{{chore.category}} {{chore.done ? 'done' : ''}}"
+      >
+        <view class="check" data-id="{{chore.id}}" data-done="{{chore.done}}" catchtap="toggleDone">✓</view>
+        <view class="body" data-id="{{chore.id}}" bindtap="editChore">
+          <view class="task-title">{{chore.title}}</view>
+          <view class="task-sub">
+            <block wx:if="{{chore.assignee_id}}">
+              <view class="avatar sm" style="background:{{chore.assigneeColor}}22">{{chore.assigneeEmoji}}</view>
+              <text class="who">{{chore.assigneeName}}</text>
+            </block>
+            <text wx:else class="badge-nobody">待认领</text>
+            <text class="sep">·</text>
+            <text>{{chore.freqText}}</text>
+            <block wx:if="{{!chore.is_active}}">
+              <text class="sep">·</text>
+              <text>已暂停</text>
+            </block>
+          </view>
+        </view>
+        <text class="pts">{{chore.catIcon}} {{chore.points}}</text>
+      </view>
+    </view>
+
+    <view class="section bottom-actions">
+      <button class="btn ghost half" bindtap="openImport">导入模板</button>
+      <button class="btn half" bindtap="addChore">新增家务</button>
+    </view>
+  </block>
+
+  <!-- 模板导入弹层 -->
+  <view wx:if="{{showImport}}" class="mask" bindtap="closeImport">
+    <view class="sheet" catchtap="noop">
+      <view class="grab"></view>
+      <view class="sheet-title">导入家务模板</view>
+      <view class="sheet-desc">勾选后一键写进家里 —— 已经在清单里的会自动置灰跳过。</view>
+
+      <view
+        wx:for="{{importGroups}}"
+        wx:for-item="group"
+        wx:for-index="gi"
+        wx:key="category"
+        class="import-group"
+      >
+        <view class="import-head">
+          <text class="import-label">{{group.label}}</text>
+          <view class="import-all" data-gi="{{gi}}" catchtap="selectAllGroup">全选本组</view>
+        </view>
+        <view class="import-desc">{{group.desc}}</view>
+
+        <view
+          wx:for="{{group.items}}"
+          wx:for-item="preset"
+          wx:for-index="ii"
+          wx:key="key"
+          class="preset-row {{preset.disabled ? 'off' : ''}}"
+          data-gi="{{gi}}"
+          data-ii="{{ii}}"
+          catchtap="togglePreset"
+        >
+          <view class="preset-main">
+            <text class="preset-title">{{preset.title}}</text>
+            <text class="preset-meta">{{preset.freqText}} · {{preset.points}} 分{{preset.disabled ? ' · 已存在' : ''}}</text>
+          </view>
+          <view class="preset-box {{preset.checked ? 'on' : ''}}">{{preset.checked ? '✓' : ''}}</view>
+        </view>
+      </view>
+
+      <button class="btn" bindtap="doImport">导入选中的 {{importCount}} 项</button>
+      <button class="btn line mt" bindtap="closeImport">取消</button>
+    </view>
+  </view>
+
+</view>

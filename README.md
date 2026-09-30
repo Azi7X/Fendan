@@ -5,6 +5,15 @@
 
 一个移动端优先的 Web App（PWA），后端纯 Python。参考 Duodo 的协作任务体验，但**完全围绕家庭分工场景设计**。
 
+同仓库还有一版**微信小程序端**（`miniprogram/`），产品设计和数据模型一致，方便直接丢进家庭微信群分享：
+
+| | 形态 | 后端 | 适合 |
+| --- | --- | --- | --- |
+| `app/` + `run.py` | 移动端 H5 / PWA | 自建 FastAPI + SQLite | 自己部署、想完全掌控数据 |
+| `miniprogram/` | 微信小程序 | WorkBuddy 云服务（PostgreSQL + RLS） | 扫码就用，不用买服务器和备案域名 |
+
+两端的家务分类、周期规则、责任整卡制、公平度算法完全一致，可以只用其中一个，也可以都留着。详见 [`miniprogram/README.md`](miniprogram/README.md)。
+
 ---
 
 ## 核心设计（对应三个步骤）
@@ -134,6 +143,16 @@ fendan/
     └── test_api.py           # 接口自测
 ```
 
+### 小程序端目录
+
+```
+miniprogram/
+├── app.json / app.js / app.wxss
+├── project.config.json
+├── pages/{login,today,chores,stats,family,chore-edit}/
+└── utils/{config,cloud,db,views,periods,presets,store}.js
+```
+
 ---
 
 ## 数据模型
@@ -199,7 +218,7 @@ pytest -q
 - [ ] 任务提醒 / 每日推送
 - [ ] 家务轮值（同一任务多人轮流）
 - [ ] 周报图片，一键分享到家庭群
-- [ ] 微信小程序端
+- [x] 微信小程序端（见 `miniprogram/`）
 
 ---
 

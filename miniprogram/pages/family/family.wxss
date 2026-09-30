@@ -1,0 +1,84 @@
+.head { padding: 30rpx 32rpx 26rpx; }
+.head-title {
+  display: block;
+  font-size: 44rpx;
+  font-weight: 800;
+}
+.head-sub {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #8a85a3;
+}
+
+/* ---------------- 邀请码 ---------------- */
+.invite-box {
+  background: linear-gradient(135deg, #1f1b3a, #322a5e);
+  border-radius: 36rpx;
+  padding: 40rpx 34rpx;
+  text-align: center;
+}
+.invite-tip {
+  display: block;
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.72);
+}
+.invite-code {
+  display: block;
+  font-size: 62rpx;
+  font-weight: 800;
+  letter-spacing: 16rpx;
+  color: #ffffff;
+  margin: 20rpx 0 10rpx;
+  padding-left: 16rpx;
+}
+.invite-hint {
+  display: block;
+  font-size: 23rpx;
+  color: rgba(255, 255, 255, 0.58);
+}
+.invite-btn {
+  margin-top: 30rpx;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+/* ---------------- 成员 ---------------- */
+.member-row {
+  display: flex;
+  align-items: center;
+  padding: 22rpx 0;
+  border-bottom: 2rpx solid #f2f0f9;
+}
+.member-row:first-child { padding-top: 0; }
+.member-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.member-info { flex: 1; margin-left: 22rpx; }
+.member-name {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+.member-role {
+  display: block;
+  font-size: 23rpx;
+  color: #8a85a3;
+  margin-top: 6rpx;
+}
+
+/* ---------------- 工具说明 ---------------- */
+.tool-note {
+  margin-top: 22rpx;
+  font-size: 23rpx;
+  line-height: 1.7;
+  color: #8a85a3;
+}
+
+.version {
+  margin-top: 32rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #a49fbb;
+}

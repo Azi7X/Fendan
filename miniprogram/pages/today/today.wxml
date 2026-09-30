@@ -1,0 +1,125 @@
+<view class="page">
+
+  <view wx:if="{{loading}}" class="empty">
+    <text class="em">⏳</text>
+    <text class="line">正在加载…</text>
+  </view>
+
+  <view wx:elif="{{error}}" class="empty">
+    <text class="em">😕</text>
+    <text class="line">{{error}}</text>
+  </view>
+
+  <block wx:else>
+    <!-- 周条 -->
+    <view class="weekstrip">
+      <view
+        wx:for="{{weekDays}}"
+        wx:key="day"
+        class="day-chip {{item.active ? 'active' : ''}} {{item.isToday ? 'today' : ''}}"
+        data-day="{{item.day}}"
+        bindtap="pickDay"
+      >
+        <text class="wd">{{item.weekdayShort}}</text>
+        <text class="dn">{{item.dayNum}}</text>
+        <view class="dot {{item.hasTask ? '' : 'off'}}"></view>
+      </view>
+    </view>
+
+    <!-- 完成度 -->
+    <view class="progress-card">
+      <view class="prow">
+        <view class="pleft">
+          <text class="plabel">{{isToday ? '今日完成度' : '当天完成度'}}</text>
+          <text class="pverdict">{{percent >= 100 ? '全部搞定，辛苦了 🎉' : percent >= 60 ? '快收尾了，加油' : '还有活没干完哦'}}</text>
+        </view>
+        <view class="pratio">
+          <text class="big">{{summary.done}}</text>
+          <text class="small">/{{summary.total}}</text>
+        </view>
+      </view>
+      <view class="pbar"><view class="pfill" style="width:{{percent}}%"></view></view>
+      <view class="pmeta">
+        <text>✅ 已完成 {{summary.done}}</text>
+        <text>⭐ 已得 {{summary.pointsDone}} / {{summary.pointsTotal}} 分</text>
+        <text wx:if="{{summary.unassigned}}">⚠️ {{summary.unassigned}} 项无人认领</text>
+      </view>
+    </view>
+
+    <!-- 待完成 -->
+    <view class="section">
+      <view class="section-head">
+        <text class="title">待完成</text>
+        <text class="count">{{pending.length}} 项</text>
+      </view>
+
+      <view wx:if="{{pending.length === 0}}" class="empty">
+        <text class="em">🎉</text>
+        <text class="line">这一天的活都干完了</text>
+        <text class="hint">给自己倒杯水吧</text>
+      </view>
+
+      <view
+        wx:for="{{pending}}"
+        wx:key="id"
+        class="task cat-{{item.category}}"
+      >
+        <view class="check" data-id="{{item.id}}" data-done="false" catchtap="toggleDone">✓</view>
+        <view class="body" data-id="{{item.id}}" bindtap="editChore">
+          <view class="task-title">{{item.title}}</view>
+          <view class="task-sub">
+            <block wx:if="{{item.assignee_id}}">
+              <view class="avatar sm" style="background:{{item.assigneeColor}}22">{{item.assigneeEmoji}}</view>
+              <text class="who">{{item.assigneeName}}{{item.assignee_id === myId ? ' · 我' : ''}}</text>
+            </block>
+            <text wx:else class="badge-nobody">待认领</text>
+            <text class="sep">·</text>
+            <text>{{item.freqText}}</text>
+            <block wx:if="{{item.note}}">
+              <text class="sep">·</text>
+              <text>{{item.note}}</text>
+            </block>
+          </view>
+        </view>
+        <text class="pts">{{item.catIcon}} {{item.points}}</text>
+      </view>
+    </view>
+
+    <!-- 已完成 -->
+    <view class="section" wx:if="{{done.length}}">
+      <view class="section-head">
+        <text class="title">已完成</text>
+        <text class="count">{{done.length}} 项</text>
+      </view>
+      <view
+        wx:for="{{done}}"
+        wx:key="id"
+        class="task cat-{{item.category}} done"
+      >
+        <view class="check" data-id="{{item.id}}" data-done="true" catchtap="toggleDone">✓</view>
+        <view class="body" data-id="{{item.id}}" bindtap="editChore">
+          <view class="task-title">{{item.title}}</view>
+          <view class="task-sub">
+            <block wx:if="{{item.assignee_id}}">
+              <view class="avatar sm" style="background:{{item.assigneeColor}}22">{{item.assigneeEmoji}}</view>
+              <text class="who">{{item.assigneeName}}</text>
+            </block>
+            <text wx:else class="badge-nobody">待认领</text>
+            <text class="sep">·</text>
+            <text>{{item.freqText}}</text>
+          </view>
+        </view>
+        <text class="pts">{{item.catIcon}} {{item.points}}</text>
+      </view>
+    </view>
+
+    <!-- 快速添加 -->
+    <view class="quick-wrap">
+      <button class="quick" bindtap="addChore">
+        <text class="quick-text">＋ 添加一件家务</text>
+        <text class="quick-ic">📝</text>
+      </button>
+    </view>
+  </block>
+
+</view>

@@ -1,0 +1,22 @@
+.intro { padding: 34rpx 32rpx 10rpx; }
+.intro-title {
+  display: block;
+  font-size: 44rpx;
+  font-weight: 800;
+}
+.intro-desc {
+  display: block;
+  margin-top: 14rpx;
+  font-size: 25rpx;
+  line-height: 1.7;
+  color: #8a85a3;
+}
+
+.custom-day { margin-top: 14rpx; }
+
+.row-actions {
+  display: flex;
+  margin-top: 22rpx;
+}
+.half { flex: 1; }
+.half + .half { margin-left: 20rpx; }

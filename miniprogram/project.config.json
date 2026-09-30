@@ -11,8 +11,13 @@
     "enhance": true,
     "postcss": true,
     "minified": true,
-    "packNpmManually": false,
-    "packNpmRelationList": [],
+    "packNpmManually": true,
+    "packNpmRelationList": [
+      {
+        "packageJsonPath": "./package.json",
+        "miniprogramNpmDistDir": "./"
+      }
+    ],
     "babelSetting": {
       "ignore": [],
       "disablePlugins": [],

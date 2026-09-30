@@ -16,10 +16,14 @@ data/
 .coverage
 htmlcov/
 
-# 小程序 npm 依赖与构建产物
-# 二者都由本地安装/构建生成，不入库；package-lock.json 要入库以保证可复现
+# 小程序 npm 依赖
+# node_modules 是本地安装产物，体积大且可由 lock 复现，不入库。
 node_modules/
-miniprogram_npm/
+
+# 注意：miniprogram_npm/ 必须入库，不要加进忽略列表。
+# 它是微信要求的分发形态（「构建 npm」的产物），发布打包直接读取该目录；
+# 一旦被忽略，打包时可能被视为构建产物排除，导致发布阶段找不到 SDK 而失败。
+# package-lock.json 同样要入库，保证任何机器装到同一版本。
 
 # 编辑器 / 系统
 .vscode/

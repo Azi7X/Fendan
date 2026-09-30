@@ -253,7 +253,10 @@ function buildStats(family, scope) {
     const day = localDayOf(chore.created_at);
     return day && day >= start;
   });
-  scopedChores.forEach((chore) => {
+  // 只算「有人提出」的任务 —— 这样总数与每位成员提出数之和永远对得上
+  // （没有提出人的任务不计入任何人的账，也不该计入总数）
+  const proposed = scopedChores.filter((chore) => chore.created_by_id);
+  proposed.forEach((chore) => {
     const bucket = buckets[chore.created_by_id];
     if (!bucket) return;
     bucket.createdCount += 1;
@@ -295,7 +298,7 @@ function buildStats(family, scope) {
     totalPoints,
     invisiblePoints,
     invisibleRatio: totalPoints ? Math.round((invisiblePoints / totalPoints) * 100) : 0,
-    totalCreated: scopedChores.length,
+    totalCreated: proposed.length,
     fairness: Math.round(fairness * 100),
     maxPoints: Math.max(1, ...list.map((item) => item.points)),
     maxCreated: Math.max(1, ...creators.map((item) => item.createdCount)),

@@ -346,9 +346,13 @@ def test_stats_counts_proposals(client):
         f"/api/households/{code}/chores",
         json={"title": "给花浇水", "created_by_id": mom["id"], "assignee_id": mom["id"]},
     )
+    # 没有提出人的任务：不该计入任何人的账，也不该拉高总数
+    client.post(f"/api/households/{code}/chores", json={"title": "没人认领的公共事务"})
 
     data = client.get(f"/api/households/{code}/stats?scope=all").json()
     assert data["total_created"] == 3
+    # 总数与每位成员提出数之和永远对得上
+    assert data["total_created"] == sum(m["created_count"] for m in data["members"])
 
     by_id = {m["member_id"]: m for m in data["members"]}
     assert by_id[dad["id"]]["created_count"] == 2

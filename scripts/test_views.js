@@ -72,7 +72,9 @@ check('爸爸提出数', byId[1].createdCount, 1);
 check('爸爸派出去', byId[1].assignedOut, 1);
 check('妈妈提出数', byId[2].createdCount, 2);
 check('妈妈派出去', byId[2].assignedOut, 1);
-check('总提出数', stats.totalCreated, 4);
+// 买手纸没有提出人，所以不计入总数 —— 总数必须等于各成员提出数之和
+check('总提出数（不含没人提的买手纸）', stats.totalCreated, 3);
+check('总数 = 各成员提出数之和', stats.totalCreated, byId[1].createdCount + byId[2].createdCount);
 check('操心榜第一名', stats.creators[0].name, '妈妈');
 check('没人认领的不进操心榜', stats.creators.length, 2);
 

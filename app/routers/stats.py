@@ -102,7 +102,10 @@ def household_stats(
     # 「提出数」—— 谁在负责「想到」。
     # 这类脑力活过去完全不可见：记着买日用品、约维修、安排行程，
     # 做的人不提，家里就没人知道是谁在操心。按任务的创建时间落在统计区间内来算。
-    created_query = db.query(Chore).filter(Chore.household_id == household.id)
+    # 只统计「有人提出」的任务，这样总数与每位成员提出数之和始终对得上。
+    created_query = db.query(Chore).filter(
+        Chore.household_id == household.id, Chore.created_by_id.isnot(None)
+    )
     if since is not None:
         created_query = created_query.filter(Chore.created_at >= since)
     created_chores = created_query.all()
